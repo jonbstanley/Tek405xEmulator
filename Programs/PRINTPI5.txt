@@ -1,0 +1,8 @@
+5  PRINT "HELLO DAVE"
+6  PRINT "This program prints PI five times!" 
+10 FOR I=1 TO 5
+20 PRINT PI
+30 NEXT I
+40 PRINT "GOODBYE DAVE"
+
+

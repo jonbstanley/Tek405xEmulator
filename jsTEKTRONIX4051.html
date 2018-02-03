@@ -1,0 +1,312 @@
+<html>
+
+<head>
+
+<TITLE>jsTEKTRONIX4051 - A Tektronix 4051 emulator written in Javascript. Copyright (c) 2015 David E. Roberts.</TITLE>
+
+<style>
+body {font-size:small; line-height:140%; padding:2px;}
+table {font-size:small; line-height:140%; padding:2px;}
+a:hover {background:yellow}
+h1 {color:red}
+big {color:red}
+</style>
+
+<script src="MC6800.js"        language="JavaScript"></script>
+<script src="TEKTRONIX4051.js" language="JavaScript"></script>
+
+</head>
+
+<body onload="tek_init();">
+
+<div style="width:2000px; margin: 2em auto 0 auto;">
+
+<table><tr>
+
+<td valign=top style="width:1000px;">
+<div id="middlecolumn" style="width:1000px;">
+
+<table>
+<tr>
+<td><canvas id="canvas" name="canvas" width="1024" height="780" style="border: medium solid ;"> </canvas></td>
+</tr>
+</table>
+
+<br>
+
+<input id="start" value="start" onclick="javascript:tek_start();" type="button">
+<input id="stop"  value="pause" disabled="true" onclick="javascript:tek_stop();" type="button">
+<input id="reset" value="reset" onclick="javascript:tek_reset();" type="button">
+
+Interrupts:
+<input id="interrupts" value="0" size="5" type="text">
+
+GPIB PROGRAM LOAD:
+<input type='file' id='loadfile' onchange='javascript:tek_load()'>
+
+<br>
+
+</div>
+
+<div>
+<pre style="border: medium solid ;"><p id="logbuf">Console:
+</p>
+</pre>
+</div>
+
+<div>
+<script language="JavaScript">
+
+var tek;
+
+function tek_init() {
+
+    var mylogbuf    = document.getElementById('logbuf');
+
+    var mycanvas    = document.getElementById('canvas');
+    
+    var mycanvasctx = mycanvas.getContext("2d");
+
+    tek = new TEKTRONIX4051( window, mycanvasctx, mylogbuf );
+
+} // End of function tek_init.
+
+function tek_start() { 
+
+    window.onkeydown = tek.handleEvent;
+    window.onkeyup   = tek.handleEvent;
+
+    tek.execute_start.apply( tek );
+
+    document.getElementById('start').disabled   = true;
+    document.getElementById('stop').disabled    = false;
+
+} // End of function tek_start.
+
+function tek_stop() {
+
+    window.onkeydown = null;
+    window.onkeyup   = null;
+
+    tek.execute_stop.apply( tek );
+
+    document.getElementById('start').disabled = false;
+    document.getElementById('stop').disabled  = true;
+
+} // End of function tek_stop.
+
+function tek_reset() {
+
+    tek.execute_reset.call( tek );
+
+    tek.interruptCounter = 0;
+
+} // End of function tek_reset.
+
+function tek_load() {
+
+  // See what file has been selected by the user (if any).
+  var file = document.getElementById('loadfile').files[0];
+  
+  // Ignore if no file has been selected by the user.
+  if( !file )
+    return;
+    
+  // Create a new instance of the FileReader to actually read the selected file.
+  var fread = new FileReader();
+  
+  // This is the function invoked after a successful file load.
+  fread.onload = function( levent ) {
+  
+    var data = new DataView( levent.target.result );
+    
+    var size = levent.target.result.byteLength;
+    
+    var i; // Index into source data.
+    var j; // Index into destination data.
+    var BackslashSeen;
+    var UnderscoreSeen;
+    var OneChar;
+    
+    var ASCIIbackslash  = 92;
+    var ASCIIunderscore = 95;
+    
+    var bytes = Array( size );
+    
+    j = 0;
+    
+    BackslashSeen  = 0; // None seen yet.
+    UnderscoreSeen = 0; // None seen yet.
+    
+    for( i=0; i<size; i++ ) {
+    
+      // Pick up the first/next character.
+      //
+      OneChar = data.getUint8( i );
+      
+      // Convert any Line Feeds (0x0A) into CRs (0x0D).
+	  //
+	  if( OneChar == 0x0A )
+	    OneChar = 0x0D;
+
+	  // Convert 0x08 into 0x00.
+	  if( OneChar == 0x08 )
+	    OneChar = 0x00;
+	  
+if( 1 == 1 ) {
+
+	  if( OneChar == ASCIIunderscore ) {
+	  
+	    // Seen an ASCII '_' character.
+	    
+	    if( UnderscoreSeen == 1 ) {
+	    
+	      // Current character is an underscore and the 'underscore seen' flag is set.
+	      
+	      // We really must want an underscore then!
+	      
+  	      // Store the character away and bump the index.
+	      //
+	      bytes[ j++ ] = OneChar;
+	    
+	      // Clear the 'underscore seen' flag.
+	      //	    
+	      UnderscoreSeen = 0;
+	      
+	    } else {
+	    
+	      // The current character is an underscore but the 'underscore seen' flag is clear.
+	      // Check if the previous character stored in the buffer is between '@' and '^' and
+	      // (if so) convert into a control character. If not - set the 'underscore seen' flag.
+	      
+	      var temp = bytes[ j-1 ];
+	      
+	      if( (temp >= 0x40) && (temp <= 0x5E) ) {
+	      
+	        // Convert to a control character.
+	        //
+	        temp -= 0x40;
+	        
+	        // Store back away.
+	        //
+	        bytes[ j-1 ] = temp;
+	        
+	      } else {
+	      
+	        // Set the 'underscore seen' flag.
+	        //
+	        UnderscoreSeen = 1;
+	        
+	      } // End if last character stored in range.
+	      
+	    } // End if UnderscoreSeen.
+	    
+	  } else {
+	  
+	    // Not an ASCII '_' character.
+	    
+	    // Store the character away (if not null) and bump the index.
+	    //
+	    if( OneChar != 0x00 )
+	      bytes[ j++ ] = OneChar;
+	    
+	    // Clear the 'underscore seen' flag.
+	    //	    
+	    UnderscoreSeen = 0;
+	    
+	  } // End if current character is an '_'.
+	  
+} else {
+
+	  // Did we see a backslash on the last iteration of the loop?
+	  //
+	  if( BackslashSeen > 0 ) {
+	  
+	    // Yes - so process this character accordingly.
+	    
+	    // Is this character a backslash? If so - this means a real backslash is required!
+	    //
+	    if( OneChar == ASCIIbackslash ) {
+	    
+	      // A 'real' backslash is required - so store it and bump the index.
+	      //
+	      bytes[ j++ ] = OneChar;
+	      
+	      // Fall through...
+	      
+	    } else {
+	    
+	      // A 'control character' is required.
+	      //
+	      bytes[ j++ ] = (OneChar - 0x40) & 0xFF;
+	      
+	      // Fall through...
+	      
+	    } // End if backslash character.
+	    
+	    // Either way - clear the flag for the next iteration.
+	    //
+	    BackslashSeen = 0;
+	    
+	    // Fall through...
+	    
+	  } else {
+	  
+	    // No backslash character was seen last time.
+	    
+	    // Is this a backslash this time?
+	    
+	    if( OneChar == ASCIIbackslash ) {
+
+	      // YES. Set the flag only.
+	      
+	      BackslashSeen = 1;
+	      
+	      // fall through...
+	      	    
+	    } else {
+	    
+	      // Not a backslash. Store the character and bump the index.
+	      
+	      bytes[ j++ ] = OneChar;
+	      
+	      // Fall through...
+	      
+	    } // End if backslash character.
+	    
+	  } // End if BackslashSeen.
+
+} // End if patch.
+	  
+    } // End for.
+      
+    // There is a remote possibility that the BackslashSeen flag is set here.
+    // I will assume that would be a BASIC syntax error for now and ignore the
+    // fact. I can't think of a TekBASIC construct that would finish with a backslash.
+    
+    tek.execute_load.call( tek, j, bytes ); // Source and destination data length may be different.
+    
+  } // End of function fread.onload.
+  
+  // Initiate the file load.
+  fread.readAsArrayBuffer( file );
+  
+} // End of function tek_load.
+
+</script>
+</div>
+
+
+
+</div>
+</td>
+
+<td valign=top style="width:160px;">
+<br><br>
+</td>
+
+</tr></table>
+</div>
+</body>
+
+</html>

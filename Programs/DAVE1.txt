@@ -1,0 +1,5 @@
+
+100 PRINT "HELLO DAVE - THIS IS A DOUBLE QUOTE TEST"
+200 PRINT PI,PI
+300 PRINT "!@£$%^&*()-_=+[]{};:',<.>/?`~"
+400 END
