@@ -573,9 +573,20 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		if( (sot != 0) && (VECTOR_0 == 1) && (VEN_1 == 0) ) {
 		
 			if( this.adotpending ) {
-				this.setPixel( this.X_DA + X_CHAR, this.Y_DA + Y_CHAR, 2 ); // ADOT
+				// quadruple the height and width of character dots - both ADOT and SOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-1, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR-1, 2 ); // ADOT
+				
+				
 			} else {
-				this.setPixel( this.X_DA + X_CHAR, this.Y_DA + Y_CHAR, 1 ); // SOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-1, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR-1, 1 ); // ADOT
+				
+				
 			}
 			this.adotpending = false;
 			
@@ -644,6 +655,9 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		do {
 		
 			this.setPixel( x0, y0, 3 ); // VECTOR
+			this.setPixel( x0-1, y0, 3 ); // VECTOR
+			this.setPixel( x0, y0-1, 3 ); // VECTOR
+			this.setPixel( x0-1, y0-1, 3 ); // VECTOR
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
@@ -1638,8 +1652,8 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 			
 				// SOT (cursor refresh dot).
 				
-				this.setPixelRGB( x, y, 0, 0, 200 ); // BLUE
-				// this.setPixelRGB( x, y, 0, 255, 0 ); // GREEN
+				// this.setPixelRGB( x, y, 0, 0, 200 ); // BLUE
+				this.setPixelRGB( x, y, 0, 60, 0 ); // Light GREEN
 				// this.setPixelRGB( x, y, 0,   0, 0 ); // BLACK
 				
 				break;
