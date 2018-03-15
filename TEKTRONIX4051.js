@@ -574,17 +574,17 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		
 			if( this.adotpending ) {
 				// quadruple the height and width of character dots - both ADOT and SOT
-				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR, 2 ); // ADOT
-				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR, 2 ); // ADOT
-				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-1, 2 ); // ADOT
-				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR-1, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-2, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-2, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-3, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-3, 2 ); // ADOT
 				
 				
 			} else {
-				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR, 1 ); // ADOT
-				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR, 1 ); // ADOT
-				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-1, 1 ); // ADOT
-				this.setPixel( this.X_DA + 2*X_CHAR-1, this.Y_DA + 2*Y_CHAR-1, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-2, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-2, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-3, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-3, 1 ); // ADOT
 				
 				
 			}
@@ -609,7 +609,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 
 	this.ERASE = function() {
 	
-		for( x=0; x<1024; x++ ) {
+		for( x=0; x<1036; x++ ) {
 		
 			for( y=0; y<780; y++ ) {
 			
@@ -6643,8 +6643,8 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 	this.execute_reset();
 
 	this.canvas.fillStyle = "rgb("+this.ColourTable[0][0]+","+this.ColourTable[0][1]+","+this.ColourTable[0][2]+")";
-	this.canvas.fillRect( 0, 0, 1024, 780 );
-	// this.imagedata = this.canvas.getImageData( 0, 0, 1024, 780 );
+	this.canvas.fillRect( 0, 0, 1030, 770 );
+	// this.imagedata = this.canvas.getImageData( 0, 0, 1024, 780 ); changed canvas size to cover bigger characters
 	this.ERASE();
 	
 	this.println('interrupt='+this.interruptCounter+',ticks='+Math.floor(this.tstatesPerInterrupt)+' cpu ticks/interrupt, cpu clock=0.8333 MHz');
