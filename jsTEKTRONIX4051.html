@@ -54,21 +54,21 @@ Recall Next Line
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Home
 <br>	 
-<input id="reset" value="    1    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    2    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    3    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    4    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    5    " onclick="javascript:tek_reset();" type="button">
+<input id="FK1" value="    1    " onclick="javascript:tek_button();" type="button">
+<input id="FK2" value="    2    " onclick="javascript:tek_button();" type="button">
+<input id="FK3" value="    3    " onclick="javascript:tek_button();" type="button">
+<input id="FK4" value="    4    " onclick="javascript:tek_button();" type="button">
+<input id="FK5" value="    5    " onclick="javascript:tek_button();" type="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp
-<input id="reset" value="  Expand   " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="Back Space " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="   Space   " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="   Clear   " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="Recall Line" onclick="javascript:tek_reset();" type="button">
+<input id="Expand" value="  Expand   " onclick="javascript:tek_button();" type="button">
+<input id="BackSpace" value="Back Space " onclick="javascript:tek_button();" type="button">
+<input id="Space" value="   Space   " onclick="javascript:tek_button();" type="button">
+<input id="Clear" value="   Clear   " onclick="javascript:tek_button();" type="button">
+<input id="RecallLine" value="Recall Line" onclick="javascript:tek_button();" type="button">
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp
-<input id="reset" value="Auto Number" onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="Step Program" onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="Page" onclick="javascript:tek_reset();" type="button">
+<input id="AutoNum" value="Auto Number" onclick="javascript:tek_button();" type="button">
+<input id="StepPGM" value="Step Program" onclick="javascript:tek_button();" type="button">
+<input id="Page" value="Page" onclick="javascript:tek_button(0x007C);" type="button">
 <br>
 --------------------- User Definable -----------------------
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp
@@ -80,11 +80,11 @@ Home
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 19
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 20
 <br>	 
-<input id="reset" value="    6    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    7    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    8    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="    9    " onclick="javascript:tek_reset();" type="button">
-<input id="reset" value="   10   " onclick="javascript:tek_reset();" type="button">
+<input id="FK6" value="    6    " onclick="javascript:tek_button();" type="button">
+<input id="FK7" value="    7    " onclick="javascript:tek_button();" type="button">
+<input id="FK8" value="    8    " onclick="javascript:tek_button();" type="button">
+<input id="FK9" value="    9    " onclick="javascript:tek_button();" type="button">
+<input id="FK10" value="   10   " onclick="javascript:tek_button();" type="button">
 <br>
 
 <br>
@@ -126,6 +126,13 @@ function tek_init() {
     tek = new TEKTRONIX4051( window, mycanvasctx, mylogbuf );
 
 } // End of function tek_init.
+
+function tek_button(i) { 
+
+    window.onkeydown = tek.handleEvent(i);
+    window.onkeyup   = tek.handleEvent;
+    
+} // End of function tek_button.
 
 function tek_start() { 
 
