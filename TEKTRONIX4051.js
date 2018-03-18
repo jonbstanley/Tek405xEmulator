@@ -1350,7 +1350,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 									var opb7 = (this.PIA_U461_ORB >>> 7) & 0x01;
 									var npb7 = (value             >>> 7) & 0x01;
 									if( opb7 != npb7 ) {
-										//!!! beep.play(); // This works - but not too well!
+										beep.play(); // This works - but not too well!
 									} // End if.
 									this.PIA_U461_ORB = value;
 									this.GPIB_EOI_OUT = (this.PIA_U461_ORB >>> 4) & 0x01;
