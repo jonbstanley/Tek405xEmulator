@@ -23,7 +23,10 @@
 36 RETURN 
 40 END 
 100 PAGE 
-110 INIT 
+110 INIT
+111 REM Seed the Random number starting point
+115 B=RND(-1)
+116 B=RND(-1) 
 120 B=-1
 130 PRINT "                  *********** STAR TREK *************"
 140 PRINT 
@@ -114,6 +117,9 @@
 990 PRINT "PHOTON TORPEDOS."
 1000 PRINT "THE ENTERPRISE IS CURRENTLY IN QUADRANT ";E(1);" - ";E(2);
 1010 PRINT ", SECTOR ";E(3);" - ";E(4)
+1012 PRINT 
+1014 PRINT "Type 8 for COMMAND LIST"
+1016 PRINT "Input your command: ";
 1020 INPUT Q$
 1030 T(3)=0
 1040 IF T(4)<>0 THEN 1060

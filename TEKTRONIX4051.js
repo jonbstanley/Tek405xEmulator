@@ -463,11 +463,12 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		  
 		  // Line editing keys.
 		  
-//		  case 0x0000 : i = 0x70; break; // EXPAND
-//		  case 0x0000 : i = 0x71; break; // BK SPACE
-//		  case 0x0000 : i = 0x72; break; // SPACE
-		  case 0x007E : i = 0x73; break; // <f15> = CLEAR
-//		  case 0x0000 : i = 0x74; break; // RECALL
+		  case 0x0090 : i = 0x70; break; // EXPAND
+		  case 0x0091 : i = 0x71; break; // BK SPACE
+		  case 0x0092 : i = 0x72; break; // SPACE
+		  case 0x0093 : i = 0x73; break; // CLEAR (graphic FK)
+		  case 0x007E : i = 0x73; break; // Mac <f15> = CLEAR
+		  case 0x0094 : i = 0x74; break; // RECALL
 
 
 		  // Tape control keys.
@@ -573,9 +574,20 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		if( (sot != 0) && (VECTOR_0 == 1) && (VEN_1 == 0) ) {
 		
 			if( this.adotpending ) {
-				this.setPixel( this.X_DA + X_CHAR, this.Y_DA + Y_CHAR, 2 ); // ADOT
+				// quadruple the height and width of character dots - both ADOT and SOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-2, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-2, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-3, 2 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-3, 2 ); // ADOT
+				
+				
 			} else {
-				this.setPixel( this.X_DA + X_CHAR, this.Y_DA + Y_CHAR, 1 ); // SOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-2, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-2, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR+1, this.Y_DA + 2*Y_CHAR-3, 1 ); // ADOT
+				this.setPixel( this.X_DA + 2*X_CHAR, this.Y_DA + 2*Y_CHAR-3, 1 ); // ADOT
+				
+				
 			}
 			this.adotpending = false;
 			
@@ -598,7 +610,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 
 	this.ERASE = function() {
 	
-		for( x=0; x<1024; x++ ) {
+		for( x=0; x<1036; x++ ) {
 		
 			for( y=0; y<780; y++ ) {
 			
@@ -644,6 +656,9 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		do {
 		
 			this.setPixel( x0, y0, 3 ); // VECTOR
+			this.setPixel( x0-1, y0, 3 ); // VECTOR
+			this.setPixel( x0, y0-1, 3 ); // VECTOR
+			this.setPixel( x0-1, y0-1, 3 ); // VECTOR
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
@@ -1335,7 +1350,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 									var opb7 = (this.PIA_U461_ORB >>> 7) & 0x01;
 									var npb7 = (value             >>> 7) & 0x01;
 									if( opb7 != npb7 ) {
-										//!!! beep.play(); // This works - but not too well!
+										beep.play(); // This works - but not too well!
 									} // End if.
 									this.PIA_U461_ORB = value;
 									this.GPIB_EOI_OUT = (this.PIA_U461_ORB >>> 4) & 0x01;
@@ -1638,8 +1653,8 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 			
 				// SOT (cursor refresh dot).
 				
-				this.setPixelRGB( x, y, 0, 0, 200 ); // BLUE
-				// this.setPixelRGB( x, y, 0, 255, 0 ); // GREEN
+				// this.setPixelRGB( x, y, 0, 0, 200 ); // BLUE
+				this.setPixelRGB( x, y, 0, 60, 0 ); // Light GREEN
 				// this.setPixelRGB( x, y, 0,   0, 0 ); // BLACK
 				
 				break;
@@ -6629,8 +6644,8 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 	this.execute_reset();
 
 	this.canvas.fillStyle = "rgb("+this.ColourTable[0][0]+","+this.ColourTable[0][1]+","+this.ColourTable[0][2]+")";
-	this.canvas.fillRect( 0, 0, 1024, 780 );
-	// this.imagedata = this.canvas.getImageData( 0, 0, 1024, 780 );
+	this.canvas.fillRect( 0, 0, 1030, 770 );
+	// this.imagedata = this.canvas.getImageData( 0, 0, 1024, 780 ); changed canvas size to cover bigger characters
 	this.ERASE();
 	
 	this.println('interrupt='+this.interruptCounter+',ticks='+Math.floor(this.tstatesPerInterrupt)+' cpu ticks/interrupt, cpu clock=0.8333 MHz');
