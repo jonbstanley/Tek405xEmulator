@@ -121,7 +121,7 @@
 1010 PRINT ", SECTOR ";E(3);" - ";E(4)
 1012 PRINT 
 1014 PRINT "Type 8 for COMMAND LIST"
-1016 PRINT "Input your command: ";
+1016 PRINT "Press Enter to Start Mission: ";
 1020 INPUT Q$
 1030 T(3)=0
 1040 IF T(4)<>0 THEN 1060
