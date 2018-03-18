@@ -28,7 +28,7 @@ big {color:red}
 
 <table>
 <tr>
-<td><canvas id="canvas" name="canvas" width="1030" height="780" style="border: medium solid ;"> </canvas></td>
+<td><canvas id="canvas" name="canvas" width="1030" height="782" style="border: medium solid ;"> </canvas></td>
 </tr>
 </table>
 
@@ -135,9 +135,17 @@ GPIB PROGRAM LOAD:
 </div>
 
 <div>
+
 <script language="JavaScript">
 
 var tek;
+
+window.setInterval(tek_BLINK, 600);
+
+function tek_BLINK() {
+
+    tek.execute_BLINK();
+} // End of function tek_blink.
 
 function tek_init() {
 
@@ -167,8 +175,10 @@ function tek_start() {
 
     document.getElementById('start').disabled   = true;
     document.getElementById('stop').disabled    = false;
-
+	
+	
 } // End of function tek_start.
+
 
 function tek_stop() {
 
