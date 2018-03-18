@@ -23,11 +23,12 @@
 36 RETURN 
 40 END 
 100 PAGE 
-110 INIT
-111 REM Seed the Random number starting point
+110 REM INIT 		we have already initialized
+112 REM SET KEY     enable this line and press UDK 1 for debug of arrays
+114 REM Seed the Random number starting point 2 RND(-1), then RND(1)s
 115 B=RND(-1)
-116 B=RND(-1) 
-120 B=-1
+116 B=RND(-1)
+120 B=1
 130 PRINT "                  *********** STAR TREK *************"
 140 PRINT 
 150 PRINT 
@@ -59,6 +60,7 @@
 410 REM T=SECONDARY STATUS MATRIX
 420 DIM E(10),E1(6),E$(6),F$(6),G$(6),T(7),S(8,8),Q(8,8),Q$(255),L(3)
 430 DIM W$(6),P$(1),U$(1),V$(1),X$(1)
+435 T(7)=0
 440 SET DEGREES 
 450 FOR I=1 TO 8
 460 FOR I1=1 TO 8
