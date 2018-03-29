@@ -13,6 +13,9 @@ big {color:red}
 </style>
 
 <script src="MC6800.js"        language="JavaScript"></script>
+<script src="Tek4051Rom.js"    language="JavaScript"></script>
+<script src="TekDisplay.js"    language="JavaScript"></script>
+<script src="TekKeyboard.js"    language="JavaScript"></script>
 <script src="TEKTRONIX4051.js" language="JavaScript"></script>
 
 </head>
@@ -59,22 +62,22 @@ GPIB PROGRAM LOAD:
 
 var tek;
 
-function tek_init() {
 
+function tek_init() {
+    
+    //rom_firmware();
+    
     var mylogbuf    = document.getElementById('logbuf');
 
     var mycanvas    = document.getElementById('canvas');
     
     var mycanvasctx = mycanvas.getContext("2d");
-
+    
     tek = new TEKTRONIX4051( window, mycanvasctx, mylogbuf );
-
+    
 } // End of function tek_init.
 
-function tek_start() { 
-
-    window.onkeydown = tek.handleEvent;
-    window.onkeyup   = tek.handleEvent;
+function tek_start() {
 
     tek.execute_start.apply( tek );
 
@@ -84,9 +87,6 @@ function tek_start() {
 } // End of function tek_start.
 
 function tek_stop() {
-
-    window.onkeydown = null;
-    window.onkeyup   = null;
 
     tek.execute_stop.apply( tek );
 
@@ -122,169 +122,14 @@ function tek_load() {
     
     var size = levent.target.result.byteLength;
     
-    var i; // Index into source data.
-    var j; // Index into destination data.
-    var BackslashSeen;
-    var UnderscoreSeen;
-    var OneChar;
-    
-    var ASCIIbackslash  = 92;
-    var ASCIIunderscore = 95;
+    var i;
     
     var bytes = Array( size );
     
-    j = 0;
-    
-    BackslashSeen  = 0; // None seen yet.
-    UnderscoreSeen = 0; // None seen yet.
-    
-    for( i=0; i<size; i++ ) {
-    
-      // Pick up the first/next character.
-      //
-      OneChar = data.getUint8( i );
+    for( i=0; i<size; i++ )
+      bytes[i] = data.getUint8( i );
       
-      // Convert any Line Feeds (0x0A) into CRs (0x0D).
-	  //
-	  if( OneChar == 0x0A )
-	    OneChar = 0x0D;
-
-	  // Convert 0x08 into 0x00.
-	  if( OneChar == 0x08 )
-	    OneChar = 0x00;
-	  
-if( 1 == 1 ) {
-
-	  if( OneChar == ASCIIunderscore ) {
-	  
-	    // Seen an ASCII '_' character.
-	    
-	    if( UnderscoreSeen == 1 ) {
-	    
-	      // Current character is an underscore and the 'underscore seen' flag is set.
-	      
-	      // We really must want an underscore then!
-	      
-  	      // Store the character away and bump the index.
-	      //
-	      bytes[ j++ ] = OneChar;
-	    
-	      // Clear the 'underscore seen' flag.
-	      //	    
-	      UnderscoreSeen = 0;
-	      
-	    } else {
-	    
-	      // The current character is an underscore but the 'underscore seen' flag is clear.
-	      // Check if the previous character stored in the buffer is between '@' and '^' and
-	      // (if so) convert into a control character. If not - set the 'underscore seen' flag.
-	      
-	      var temp = bytes[ j-1 ];
-	      
-	      if( (temp >= 0x40) && (temp <= 0x5E) ) {
-	      
-	        // Convert to a control character.
-	        //
-	        temp -= 0x40;
-	        
-	        // Store back away.
-	        //
-	        bytes[ j-1 ] = temp;
-	        
-	      } else {
-	      
-	        // Set the 'underscore seen' flag.
-	        //
-	        UnderscoreSeen = 1;
-	        
-	      } // End if last character stored in range.
-	      
-	    } // End if UnderscoreSeen.
-	    
-	  } else {
-	  
-	    // Not an ASCII '_' character.
-	    
-	    // Store the character away (if not null) and bump the index.
-	    //
-	    if( OneChar != 0x00 )
-	      bytes[ j++ ] = OneChar;
-	    
-	    // Clear the 'underscore seen' flag.
-	    //	    
-	    UnderscoreSeen = 0;
-	    
-	  } // End if current character is an '_'.
-	  
-} else {
-
-	  // Did we see a backslash on the last iteration of the loop?
-	  //
-	  if( BackslashSeen > 0 ) {
-	  
-	    // Yes - so process this character accordingly.
-	    
-	    // Is this character a backslash? If so - this means a real backslash is required!
-	    //
-	    if( OneChar == ASCIIbackslash ) {
-	    
-	      // A 'real' backslash is required - so store it and bump the index.
-	      //
-	      bytes[ j++ ] = OneChar;
-	      
-	      // Fall through...
-	      
-	    } else {
-	    
-	      // A 'control character' is required.
-	      //
-	      bytes[ j++ ] = (OneChar - 0x40) & 0xFF;
-	      
-	      // Fall through...
-	      
-	    } // End if backslash character.
-	    
-	    // Either way - clear the flag for the next iteration.
-	    //
-	    BackslashSeen = 0;
-	    
-	    // Fall through...
-	    
-	  } else {
-	  
-	    // No backslash character was seen last time.
-	    
-	    // Is this a backslash this time?
-	    
-	    if( OneChar == ASCIIbackslash ) {
-
-	      // YES. Set the flag only.
-	      
-	      BackslashSeen = 1;
-	      
-	      // fall through...
-	      	    
-	    } else {
-	    
-	      // Not a backslash. Store the character and bump the index.
-	      
-	      bytes[ j++ ] = OneChar;
-	      
-	      // Fall through...
-	      
-	    } // End if backslash character.
-	    
-	  } // End if BackslashSeen.
-
-} // End if patch.
-	  
-    } // End for.
-      
-    // There is a remote possibility that the BackslashSeen flag is set here.
-    // I will assume that would be a BASIC syntax error for now and ignore the
-    // fact. I can't think of a TekBASIC construct that would finish with a backslash.
-    
-    tek.execute_load.call( tek, j, bytes ); // Source and destination data length may be different.
+    tek.execute_load.call( tek, size, bytes ); 
     
   } // End of function fread.onload.
   
