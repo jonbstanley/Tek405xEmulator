@@ -862,7 +862,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;
 									var npb7 = (value             >>> 7) & 0x01;
 									if( opb7 != npb7 ) {
-										//!!! beep.play(); // This works - but not too well!
+										beep.play(); // This works - but not too well!
 									} // End if.
 									PIA_U461_ORB = value;
 									GPIB_EOI_OUT = (PIA_U461_ORB >>> 4) & 0x01;
@@ -1115,9 +1115,14 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
     this.execute_start = function() {
 		exec_interval = setInterval( cpu.execute, 17 ); // 17ms == 60 intervals/sec
         int_interval = setInterval( interrupt, 1 );
+		cursor_blink_interval = setInterval( display.blink, 600 ); // 600 ms second blink interval
     }
     
-    this.execute_stop = function() {
+    this.execute_fcnkey = function(keyCode, press) {
+		keyboard.FcnKey( keyCode , press );
+    }
+	
+	this.execute_stop = function() {
 		clearInterval( exec_interval );
         clearInterval( int_interval );
     }

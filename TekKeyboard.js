@@ -1,6 +1,21 @@
 function TekKeyboard(hw, window) {
 
-    // *****************************
+    // *********************
+    // ***               ***
+    // ***  HandleEvent  ***
+    // ***               ***
+    // *********************
+
+    function handleEvent( e ) {
+
+		// this.println("You pressed: which="+e.which+",keyUniCode="+e.keyCode+",shift="+e.shiftKey+",charCode="+e.charCode+",tochar="+String.fromCharCode(e.which)+",type="+e.type);
+
+        return tek.HandleKeyboardEvent.call( tek, e.keyCode, e.type=='keydown', e );
+
+    } // End of function handleEvent.
+
+
+	// *****************************
     // ***                       ***
     // ***  HandleKeyboardEvent  ***
     // ***                       ***
@@ -125,17 +140,18 @@ function TekKeyboard(hw, window) {
 		  case 0x0079 : i = 0x69; break; // FK10  
 		  
 		  // Line editing keys.
-//		  case 0x0000 : i = 0x70; break; // EXPAND
-//		  case 0x0000 : i = 0x71; break; // BK SPACE
-//		  case 0x0000 : i = 0x72; break; // SPACE
+		  case 0x0090 : i = 0x70; break; // EXPAND
+		  case 0x0091 : i = 0x71; break; // BK SPACE
+		  case 0x0092 : i = 0x72; break; // SPACE
+		  case 0x0093 : i = 0x73; break; // CLEAR (graphic FK)
 		  case 0x007E : i = 0x73; break; // <f15> = CLEAR
-//		  case 0x0000 : i = 0x74; break; // RECALL
+		  case 0x0000 : i = 0x74; break; // RECALL
 
 
 		  // Tape control keys.
-//		  case 0x0000 : i = 0x77; break; // AUTO LOAD
-//		  case 0x0000 : i = 0x5C; break; // REWIND
-//		  case 0x0000 : i = 0x5D; break; // MAKE COPY
+		  case 0x0000 : i = 0x77; break; // AUTO LOAD
+		  case 0x0000 : i = 0x5C; break; // REWIND
+		  case 0x0000 : i = 0x5D; break; // MAKE COPY
 
 
 		  // Program control keys.
@@ -173,6 +189,20 @@ function TekKeyboard(hw, window) {
         return HandleKeyboardEvent(e.keyCode, e.type=='keydown', e );
     }
     
+
+	// ***************
+    // ***         ***
+    // ***  FcnKey ***
+    // ***         ***
+    // ***************
+
+	this.FcnKey = function(code, press) {
+		// code - key code for keyboard key
+		// press   - true for keydown, false for key up
+		var e = {keyCode:code, type:press ? "keydown" : "keyup", returnValue: false};
+		return handleEvent(e);
+	}
+
     window.onkeydown = handleEvent;
     window.onkeyup   = handleEvent;
 }

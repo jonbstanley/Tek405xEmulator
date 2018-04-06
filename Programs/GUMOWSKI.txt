@@ -1,0 +1,39 @@
+10 REM GUMOWSKI by John Lansdown - written for Tektronix 4051
+20 REM Creative Computing v04 n05 1978 Sept-Oct pages 88-89
+30 REM    Example graphs: 	A=1 	C=-0.9
+40 REM 						A=0.8 	C=-0.9 
+50 REM						A=1		C=-0.925
+60 REM						A=1		C=-0.3
+70 REM						A=1		C=-0.89
+80 REM						A=0.9	C=-0.5
+90 REM   Varying A changes the shape and C alters details
+95 REM   A should be less than or equal 1. F is used to scale the output
+96 REM   The more points plotted the better, try experimenting
+100 INIT
+110 PAGE
+120 F=0.8
+130 READ W1,W2,W3,W4
+140 DATA -65,65,-50,50
+150 WINDOW W1*F,W2*F,W3*F,W4*F
+160 I=1
+170 X=1
+180 Y=1
+185 PRINT "GUMOWSKI by John Landsdown, based on J Gumowski and C Mira"
+190 PRINT "INPUT A and C :";
+200 INPUT A,C
+202 PAGE
+204 PRINT " GUMOWSKI"
+210 PRINT "A = ";A;" C= ";C
+220 S=X
+230 X=A*Y+C*X+2*X*X*(1-C)/(1+X*X)
+240 Y=-S+C*X+2*X*X*(1-C)/(1+X*X)
+250 MOVE X,Y
+260 RMOVE 0,0.1
+270 RDRAW -0.1,-0.2
+280 RDRAW 0.2,0
+290 RDRAW -0.1,0.2
+300 I=I+1
+310 IF I>1500 THEN 330
+320 GO TO 220
+330 HOME
+340 END
