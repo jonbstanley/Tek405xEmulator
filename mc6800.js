@@ -58,10 +58,10 @@ function TekCpu(hw) {
     const MIPS = 0.833;
     
     // When the TekCpu object is created, its execute() function will
-    // be called 60 times per second in a SetInterval. To faithfully emulate
+    // be called 1000 times per second in a SetInterval. To faithfully emulate
     // the actual speed of a 6800, compute the number of instructions that will
     // be executed in one execute() function call interval.
-    const InstructionsPerInterval = (MIPS*1000000/60.0);
+    const InstructionsPerInterval = (MIPS*1000000/1000);
     //console.log("InstructionsPerInterval = " + InstructionsPerInterval);
 
     // Change this value to true if you want to see some processor executions logged to the console

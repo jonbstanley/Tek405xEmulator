@@ -2,8 +2,17 @@
 
 function TekDisplay(hw, canvas) {
 	
+	var canvasctx = canvas.getContext("2d");
+	var width = canvas.width;
+	var height = canvas.height;
+	
 	var X_DA = 0;
 	var Y_DA = 0;
+	
+	const pixel_erase_inten  = 255;
+	const pixel_store_inten  = 240;
+	const pixel_cursor_inten = 180;
+	
 	
     // ********************
     // ***              ***
@@ -27,8 +36,8 @@ function TekDisplay(hw, canvas) {
       [ 255, 255, 255 ], // [7] White.
     ];
     
-	canvas.fillStyle = "rgb("+ColourTable[0][0]+","+ColourTable[0][1]+","+ColourTable[0][2]+")";
-	canvas.fillRect( 0, 0, 1024, 780 );
+	canvasctx.fillStyle = "rgb("+ColourTable[0][0]+","+ColourTable[0][1]+","+ColourTable[0][2]+")";
+	canvasctx.fillRect( 0, 0, width, height );
     
     // ****************
     // ***          ***
@@ -51,7 +60,11 @@ function TekDisplay(hw, canvas) {
 		
 		do {
 		
+			// double vector pixel width and height
 			setPixel( x0, y0, 'VECTOR' );
+			setPixel( x0-1, y0, 'VECTOR' );
+			setPixel( x0, y0-1, 'VECTOR' );
+			setPixel( x0-1, y0-1, 'VECTOR' );
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
@@ -87,14 +100,13 @@ function TekDisplay(hw, canvas) {
 		 		setPixelRGB( x, y, 0, 0, 0 ); // BLACK
 				break;
 			case 'SOT' : // cursor refresh dot
-				setPixelRGB( x, y, 0, 0, 200 ); // BLUE
-				// setPixelRGB( x, y, 0, 255, 0 ); // GREEN
+				setPixelRGB( x, y, 0, pixel_cursor_inten, 0 ); // DARK GREEN
 				break;
 			case 'ADOT' : // stored character dot
-				setPixelRGB( x, y, 0, 200, 0 ); // DARK GREEN
+				setPixelRGB( x, y, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
 				break;
 			case 'VECTOR' :
-				setPixelRGB( x, y, 0, 200, 0 ); // DARK GREEN
+				setPixelRGB( x, y, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
 				break;
 			default :
 				break;
@@ -102,9 +114,9 @@ function TekDisplay(hw, canvas) {
 	}
 
 	function setPixelRGB( x, y, r, g, b ) {	    
-		my = 779 - y; // Convert to 'canvas' coordinates from Tektronix coordinates.
-		canvas.fillStyle = "rgb("+r+","+g+","+b+")";
-		canvas.fillRect( x,my, 1,1 );
+		my = height - y; // Convert to 'canvas' coordinates from Tektronix coordinates.
+		canvasctx.fillStyle = "rgb("+r+","+g+","+b+")";
+		canvasctx.fillRect( x,my, 1,1 );
 	}
     
    
@@ -161,9 +173,20 @@ function TekDisplay(hw, canvas) {
 		// Check for cursor dot.
 		if( (type == 'SOT') && (VECTOR_0 == 1) && (VEN_1 == 0) ) {
 			if( adotpending ) {
-				setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'ADOT');
+				// setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'ADOT');
+				// double width and double height of character pixels
+				// 4 setPixel calls to interpolate between pixels for continuous font appearance
+				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR-2, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR, Y_DA + 2*Y_CHAR-2, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR-3, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR, Y_DA + 2*Y_CHAR-3, 'ADOT' );
+								
 			} else {
-				setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'SOT');
+			    // setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'SOT');
+				// double width and double height of cursor pixels
+				// but don't fill in completely, it is pixelated on the actual machine
+				setPixel( X_DA + 2*X_CHAR, Y_DA + 2*Y_CHAR-2, 'SOT' );
+				
 			}
 			adotpending = false;
 		} // End if sot.
@@ -195,12 +218,66 @@ function TekDisplay(hw, canvas) {
 
 	this.ERASE = function() {
 		//console.log("TekDisplay: Erase screen");
-		for( x=0; x<1024; x++ ) {
-			for( y=0; y<780; y++ ) {
-				setPixel( x, y, 'ERASE'); 
-			}
-		}
+
+        var imgd = canvasctx.getImageData(0, 0, width, height);
+        var buffer = imgd.data.buffer;
+        var buf8 = new Uint8ClampedArray(buffer);
+        var data = new Uint32Array(buffer);
+	
+	    // Fill the screen bright green
+	    for(i = 0; i < data.length; i++) {
+           // 31:24 = alpha
+           // 23:16 = blue
+           // 15:8  = green
+           //  7:0  = red
+           data[i] = 0xFF00FF00;
+        }
+        imgd.data.set(buf8);
+        canvasctx.putImageData(imgd, 0, 0);
+        
+        // Blank the screen
+        for(i = 0; i < data.length; i++) {
+           // 31:24 = alpha
+           // 23:16 = blue
+           // 15:8  = green
+           //  7:0  = red
+           data[i] = 0xFF000000;
+        }
+        imgd.data.set(buf8);
+        
+        // The DVST resets right after the screen flash
+        setTimeout(function(){
+            canvasctx.putImageData(imgd, 0, 0);
+            }, 200);
 	}
+
+    
+	this.dvst_emulate = function() {
+	    
+	    var imgd = canvasctx.getImageData(0, 0, width, height);
+        var buffer = imgd.data.buffer;
+        var buf8 = new Uint8ClampedArray(buffer);
+        var data = new Uint32Array(buffer);
+	
+	    for(i = 0; i < data.length; i++) {
+           // 31:24 = alpha
+           // 23:16 = blue
+           // 15:8  = green
+           //  7:0  = red
+            var pixel = (data[i] >> 8) & 0xFF;
+            
+            // If the pixel is bright enough for the DVST to store it
+            // then it will stay that way. If the pixel brightness
+            // is below the threshold for the DVST to store the pixel
+            // then its brightness will decay to zero.
+            if(pixel_store_inten > pixel) {
+               data[i] = 0xFF000000; // Blank the pixel
+            }
+        }
+        imgd.data.set(buf8);
+        canvasctx.putImageData(imgd, 0, 0); 
+	}
+
 	
 	this.COPY = function() {
 	
