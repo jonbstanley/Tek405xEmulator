@@ -1,4 +1,3 @@
-
 /*
  *
  * JSMSX - MSX Emulator in Javascript
@@ -406,13 +405,6 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 					GPIB_DATA_IN = this.sbytes[ this.sbytesindex ];
 					//console.log(" *** GPIB_DATA_IN " + GPIB_DATA_IN);
 					//console.log(" ** index = " + this.sbytesindex);
-					
-					while(GPIB_DATA_IN == 10) {
-					// TO DO - JBS 2/5/18 - why is LF causing problems now when it didn't before?
-					    console.log("Received unsupported LF character, skip!");
-					    this.sbytesindex++;
-					    GPIB_DATA_IN = this.sbytes[ this.sbytesindex ];
-					}
 					
 					// Is this the 'last' character?
 					//
@@ -862,7 +854,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;
 									var npb7 = (value             >>> 7) & 0x01;
 									if( opb7 != npb7 ) {
-										//!!! beep.play(); // This works - but not too well!
+										beep.play(); // This works - but not too well!
 									} // End if.
 									PIA_U461_ORB = value;
 									GPIB_EOI_OUT = (PIA_U461_ORB >>> 4) & 0x01;
@@ -1111,15 +1103,18 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
     
     var int_interval;
     var exec_interval;
+    var dvst_emulate_interval;
 
     this.execute_start = function() {
-		exec_interval = setInterval( cpu.execute, 17 ); // 17ms == 60 intervals/sec
+		exec_interval = setInterval( cpu.execute, 1 ); // 1000 intervals per second
         int_interval = setInterval( interrupt, 1 );
+        dvst_emulate_interval = setInterval( display.dvst_emulate, 200 );
     }
     
     this.execute_stop = function() {
 		clearInterval( exec_interval );
         clearInterval( int_interval );
+        clearInterval( dvst_emulate_interval );
     }
     
     this.execute_reset = function() {
