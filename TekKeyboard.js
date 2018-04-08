@@ -173,6 +173,20 @@ function TekKeyboard(hw, window) {
         return HandleKeyboardEvent(e.keyCode, e.type=='keydown', e );
     }
     
+
+	// ***************
+    // ***         ***
+    // ***  FcnKey ***
+    // ***         ***
+    // ***************
+
+	this.FcnKey = function(code, press) {
+		// code - key code for keyboard key
+		// press   - true for keydown, false for key up
+		var e = {keyCode:code, type:press ? "keydown" : "keyup", returnValue: false};
+		return handleEvent(e);
+	}
+
     window.onkeydown = handleEvent;
     window.onkeyup   = handleEvent;
 }

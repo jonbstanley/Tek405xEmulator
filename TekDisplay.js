@@ -11,7 +11,7 @@ function TekDisplay(hw, canvas) {
 	
 	const pixel_erase_inten  = 255;
 	const pixel_store_inten  = 240;
-	const pixel_cursor_inten = 180;
+	const pixel_cursor_inten = 200;
 	
 	
     // ********************
@@ -248,7 +248,7 @@ function TekDisplay(hw, canvas) {
         // The DVST resets right after the screen flash
         setTimeout(function(){
             canvasctx.putImageData(imgd, 0, 0);
-            }, 200);
+            }, 10);  //timeout reduced to 10msec to prevent loss of first PRINTed characters after PAGE
 	}
 
     
