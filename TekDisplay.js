@@ -281,17 +281,10 @@ function TekDisplay(hw, canvas) {
 	
 	this.COPY = function() {
 	
-	    // TO DO - below is an idea, but untested
-	    /*
-	    var canvas = document.getElementById("thecanvas");
-        var image = canvas.toDataURL();
-
-        var aLink = document.createElement('a');
-        var evt = document.createEvent("HTMLEvents");
-        evt.initEvent("click");
-        aLink.download = 'image.png';
-        aLink.href = image;
-        aLink.dispatchEvent(evt); */
+        var link = document.createElement('a');
+        link.download = "screen.png";
+        link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");;
+        link.click();
 	
 	}
 
