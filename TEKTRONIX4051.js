@@ -1114,6 +1114,10 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
     this.execute_fcnkey = function(keyCode, press) {
 		keyboard.FcnKey( keyCode , press );
     }
+    
+    this.execute_copy = function() {
+		display.COPY();
+    }
 	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
