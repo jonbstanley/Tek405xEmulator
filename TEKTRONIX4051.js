@@ -1106,11 +1106,15 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
     var dvst_emulate_interval;
 
     this.execute_start = function() {
-		exec_interval = setInterval( cpu.execute, 1 ); // 1000 intervals per second
-        int_interval = setInterval( interrupt, 1 );
+		exec_interval = setInterval( cpu.execute, 10 ); // 100 intervals per second
+        int_interval = setInterval( interrupt, 10 ); //    javascript setInterval minimum is 10msec
         dvst_emulate_interval = setInterval( display.dvst_emulate, 200 );
     }
     
+    this.execute_fcnkey = function(keyCode, press) {
+		keyboard.FcnKey( keyCode , press );
+    }
+	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
         clearInterval( int_interval );
