@@ -61,10 +61,10 @@ function TekDisplay(hw, canvas) {
 		do {
 		
 			// double vector pixel width and height
-			setPixel( x0, y0, 'VECTOR' );
-			setPixel( x0-1, y0, 'VECTOR' );
-			setPixel( x0, y0-1, 'VECTOR' );
-			setPixel( x0-1, y0-1, 'VECTOR' );
+			setPixel( x0+2, y0+2, 'VECTOR' );
+			setPixel( x0, y0+2, 'VECTOR' );
+			setPixel( x0+2, y0+1, 'VECTOR' );
+			setPixel( x0, y0+1, 'VECTOR' );
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
@@ -176,16 +176,16 @@ function TekDisplay(hw, canvas) {
 				// setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'ADOT');
 				// double width and double height of character pixels
 				// 4 setPixel calls to interpolate between pixels for continuous font appearance
-				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR-2, 'ADOT' );
-				setPixel( X_DA + 2*X_CHAR, Y_DA + 2*Y_CHAR-2, 'ADOT' );
-				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR-3, 'ADOT' );
-				setPixel( X_DA + 2*X_CHAR, Y_DA + 2*Y_CHAR-3, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR-1, 'ADOT' );
+				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR-1, 'ADOT' );
 								
 			} else {
 			    // setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'SOT');
 				// double width and double height of cursor pixels
 				// but don't fill in completely, it is pixelated on the actual machine
-				setPixel( X_DA + 2*X_CHAR, Y_DA + 2*Y_CHAR-2, 'SOT' );
+				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR, 'SOT' );
 				
 			}
 			adotpending = false;
@@ -246,9 +246,10 @@ function TekDisplay(hw, canvas) {
         imgd.data.set(buf8);
         
         // The DVST resets right after the screen flash
-        setTimeout(function(){
+        //setTimeout(function(){
             canvasctx.putImageData(imgd, 0, 0);
-            }, 10);  //timeout reduced to 10msec to prevent loss of first PRINTed characters after PAGE
+         //   }, 10);  //timeout reduced to 10msec to prevent loss of first PRINTed characters after PAGE
+		
 	}
 
     
