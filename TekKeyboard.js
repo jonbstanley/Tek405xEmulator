@@ -125,11 +125,11 @@ function TekKeyboard(hw, window) {
 		  case 0x0079 : i = 0x69; break; // FK10  
 		  
 		  // Line editing keys.
-//		  case 0x0000 : i = 0x70; break; // EXPAND
-//		  case 0x0000 : i = 0x71; break; // BK SPACE
-//		  case 0x0000 : i = 0x72; break; // SPACE
-		  case 0x007E : i = 0x73; break; // <f15> = CLEAR
-//		  case 0x0000 : i = 0x74; break; // RECALL
+		  case 0x0090 : i = 0x70; break; // EXPAND
+		  case 0x0091 : i = 0x71; break; // BK SPACE
+		  case 0x0092 : i = 0x72; break; // SPACE
+		  case 0x0093 : i = 0x73; break; // <f15> = CLEAR
+		  case 0x0094 : i = 0x74; break; // RECALL
 
 
 		  // Tape control keys.
