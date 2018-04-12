@@ -62,9 +62,9 @@ function TekDisplay(hw, canvas) {
 		
 			// double vector pixel width and height
 			setPixel( x0+2, y0+2, 'VECTOR' );
-			setPixel( x0, y0+2, 'VECTOR' );
+			setPixel( x0+1, y0+2, 'VECTOR' );
 			setPixel( x0+2, y0+1, 'VECTOR' );
-			setPixel( x0, y0+1, 'VECTOR' );
+			setPixel( x0+1, y0+1, 'VECTOR' );
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
