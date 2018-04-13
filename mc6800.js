@@ -334,7 +334,7 @@ function TekCpu(hw) {
 	        // -------------------------------------------------------------------------------------
 		    // Output some status based on useful PC addresses
 	        // -------------------------------------------------------------------------------------
-		       if( lastPC == 0xCBBF ) hw.println( 'DER: MC6800.js >>>>> CRTRST: <<<<<' );
+		    // if( lastPC == 0xCBBF ) hw.println( 'DER: MC6800.js >>>>> CRTRST: <<<<<' );
 		    // if( lastPC == 0xC888 ) hw.println( 'DER: MC6800.js >>>>> CHSCAN: <<<<<' );
 		    // if( lastPC == 0xCBEE ) hw.println( 'DER: MC6800.js >>>>>  PCHAR: <<<<<' );
 		    // if( lastPC == 0xC5B2 ) hw.println( 'DER: MC6800.js >>>>>   IDLE: <<<<<' );
