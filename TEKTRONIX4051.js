@@ -19,13 +19,12 @@
  * GNU General Public License for more details.
  *
  * Completely revamped to support the hardware of the Tektronix 4051 by Dave Roberts.
+ * Other contributors: Jon Stanley
  *
  */
 
 
-function TEKTRONIX4051( window, canvas, logbuf ) {
-
-    this.logbuf = logbuf;
+function TEKTRONIX4051( window, canvas ) {
 	
 	// Hardware components
     var display = new TekDisplay(this, canvas);
@@ -33,10 +32,16 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
     var cpu = new TekCpu(this);
     var rom = new Tek4051Rom;
 	var ram = new Array(32*1024);
-	
-    this.pinta = true;
-    this.interruptCounter=0;
-    var frameSkip = 0;
+
+    // MC6820 PIA notation
+    //  * CRA = Control Register A
+    //  * CRB = Control Register B
+    //  * ORA = Output Register A
+    //  * ORB = Output Register B
+    //  * IRA = Input Register A
+    //  * IRB = Input Register B
+    //  * DDRA = Data Direction Register A
+    //  * DDRB = Data Direction Register B
 
 	var PIA_U561_CRA  = 0x00;
 	var PIA_U561_CRB  = 0x00;
@@ -122,79 +127,6 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 	var beep = new Audio( "beep.mp3" );
 	
 	var click = new Audio( "click.mp3" );
-	
-
-    // ***************
-    // ***         ***
-    // ***  print  ***
-    // ***         ***
-    // ***************
-
-    this.print = function( str ) {
-
-	this.logbuf.textContent += str;
-
-    } // End of function print.
-
-    // *****************
-    // ***           ***
-    // ***  println  ***
-    // ***           ***
-    // *****************
-
-    this.println = function( str ) {
-
-	this.logbuf.textContent += str + "\n";
-
-    } // End of function println.
-
-    // ******************
-    // ***            ***
-    // ***  printHex  ***
-    // ***            ***
-    // ******************
-
-    this.printHex1 = function( n ) {
-
-      var nn = n & 0x000F; // Isolate the least significant 4 bits.
-
-      switch( nn ) {
-        case 0x0 : this.print( '0' ); break;
-        case 0x1 : this.print( '1' ); break;
-        case 0x2 : this.print( '2' ); break;
-        case 0x3 : this.print( '3' ); break;
-        case 0x4 : this.print( '4' ); break;
-        case 0x5 : this.print( '5' ); break;
-        case 0x6 : this.print( '6' ); break;
-        case 0x7 : this.print( '7' ); break;
-        case 0x8 : this.print( '8' ); break;
-        case 0x9 : this.print( '9' ); break;
-        case 0xA : this.print( 'A' ); break;
-        case 0xB : this.print( 'B' ); break;
-        case 0xC : this.print( 'C' ); break;
-        case 0xD : this.print( 'D' ); break;
-        case 0xE : this.print( 'E' ); break;
-        case 0xF : this.print( 'F' ); break;
-        default  : break;
-      } // End switch nn.
-
-    } // End of function printHex1.
-
-    this.printHex2 = function( n ) {
-
-      this.printHex1( n >>> 4 ); // Hi nibble.
-      this.printHex1( n       ); // Lo nibble.
-
-    } // End of function printHex2.
-
-    this.printHex4 = function( n ) {
-
-      this.printHex2( n >>> 8 ); // Hi word.
-      this.printHex2( n       ); // Lo word.
-
-    } // End of function printHex4.
-
-
 
 
     // **********************
@@ -363,10 +295,10 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 					// Normal data for me.
 					// this.print( 'PROCESS_GPIB: NORMAL =0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
 					
-					if( GPIB_DATA_OUT == 0x0D )
-						this.println('');
-					else
-						this.print( "" + String.fromCharCode( GPIB_DATA_OUT ) );
+					//if( GPIB_DATA_OUT == 0x0D )
+						//this.println('');
+					//else
+						//this.print( "" + String.fromCharCode( GPIB_DATA_OUT ) );
 					
 				} // End if
 				
@@ -532,7 +464,6 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 				case 0x8794 : 	if( PIA_U565_CRA & 0x04 ) {
 									PIA_U565_CRA &= 0x3F; // Clear both interrupt bits.
 									// 0x8794 must be XXXX01XX VPULSE-1 = '0', DRBUSY-0 = '1'.
-									PIA_U565_IRA = 0x04;
 									display.SCREEN( 'ADOT' );
 									return (PIA_U565_IRA & (PIA_U565_DDRA ^ 0xFF)) | (PIA_U565_ORA & PIA_U565_DDRA);
 								} else
@@ -656,7 +587,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 			} // End of switch address.
 			
 			// !!! WE SHOULD NEVER GET HERE !!!
-						
+				/*		
 			if(        (address >= 0x878C) && (address <= 0x878F) ) {
 			   this.print( 'DER: TEKTRONIX4051.js - Reading from PIA Y-AXIS/TAPE address ' );
           	   this.printHex4( address );
@@ -701,7 +632,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
        		   this.printHex4( this.last_PC );
           	   this.println( '' );
             } // End if
-            
+            */
 			return 0x00; // BODGE
 		
 		// Is this a read from ROM?
@@ -787,11 +718,13 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 				case 0x8794 : 	if( PIA_U565_CRA & 0x04 ) {
 									// PIAHX
 									if( ((value & 0x10) == 0) && ((PIA_U565_ORA & 0x10) != 0) ) {
-									 	this.println( 'DER: TEKTRONIX4051.js - ERASE CRT' ); 
+									 	//this.println( 'DER: TEKTRONIX4051.js - ERASE CRT' );
+									 	// Assert DRBUSY-O bit active low so CPU knows display is busy erasing
+                                        PIA_U565_IRA &= 0xFB;
 									 	display.ERASE();
 									} // End if
 									if( ((value & 0x20) == 0) && ((PIA_U565_ORA & 0x20) != 0) ) {
-									 	this.println( 'DER: TEKTRONIX4051.js - COPY CRT' ); 
+									 	//this.println( 'DER: TEKTRONIX4051.js - COPY CRT' ); 
 									 	display.COPY();
 									} // End if
 									PIA_U565_ORA = value;
@@ -859,13 +792,28 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 									PIA_U461_ORB = value;
 									GPIB_EOI_OUT = (PIA_U461_ORB >>> 4) & 0x01;
 									GPIB_REN_OUT = (PIA_U461_ORB >>> 7) & 0x01;
-									//@@@ this.print( 'DER: TEKTRONIX4051.js - PC=0x' );
-					       			//@@@ this.printHex4( this.last_PC );
-									//@@@ this.print( ' BUSY-1 = '  ); this.print( (PIA_U461_ORB >>> 7) & 0x01 );
-									//@@@ this.print( ' I/O-1 = '   ); this.print( (PIA_U461_ORB >>> 6) & 0x01 );
-									//@@@ this.print( ' BREAK-1 = ' ); this.print( (PIA_U461_ORB >>> 5) & 0x01 );
+									// BUSY indicator
+									if ((PIA_U461_ORB >>> 7) & 0x01) {
+									    document.getElementById('status_busy').style.color = "#00EE00";
+									}
+									else {
+									    document.getElementById('status_busy').style.color = "#005500";
+									}
+									// I/O indicator
+									if ((PIA_U461_ORB >>> 6) & 0x01) {
+									    document.getElementById('status_io').style.color = "#00EE00";
+									}
+									else {
+									    document.getElementById('status_io').style.color = "#005500";
+									}
+									// BREAK indicator
+									if ((PIA_U461_ORB >>> 5) & 0x01) {
+									    document.getElementById('status_break').style.color = "#00EE00";
+									}
+									else {
+									    document.getElementById('status_break').style.color = "#005500";
+									}
 									//@@@ this.print( ' REN-1 = '   ); this.print( (PIA_U461_ORB >>> 7) & 0x01 );
-									//@@@ this.println('');
 								} else
 									PIA_U461_DDRB = value;
 								break;
@@ -952,7 +900,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 			// No going passed here!
 			//
 			return;
-			
+			/*
 			if(        (address >= 0x878C) && (address <= 0x878F) ) {
 			    this.print( 'DER: TEKTRONIX4051.js - Writing to   PIA Y-AXIS/TAPE address ' );
          		this.printHex4( address );
@@ -1002,7 +950,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
        			this.printHex4( this.last_PC );
           		this.println( '' );
             } // End if
-			
+			*/
 		} else {
 		
 			// NO - must be RAM or ROM then...
@@ -1016,6 +964,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 				// ***                                      ***
 				// ********************************************
 				//
+  		      	/*
   		      	this.print( 'DER: TEKTRONIX4051.js - Writing to ROM at address ' );
         		this.printHex4( address );
         		this.print( ' of ' ); 
@@ -1023,7 +972,7 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
         		this.print( ' from the instruction at address ' );
         		this.printHex4( this.last_PC );
         		this.println( '' );
-			
+			    */
 			} else {
 			
 				ram[ address ] = value;
@@ -1054,42 +1003,33 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 		return [X_CHAR, Y_CHAR, VECTOR_0, VEN_1, new_X, new_Y];
     }
     
-    this.keyboardInterrupt = function(type, key) {
+    this.displayReady = function() {
+        // Deassert DRBUSY-O bit active low
+        PIA_U565_IRA |= 0x04;
+    }
+    
+    this.keyboardData = function(type, key) {
         switch( type ) {
 			case 'PRESS' :
 			    PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F);
 			    click.play(); // This works - but not too well!
 			    break;
 			case 'RELEASE' :
-		        PIA_U461_IRA  = (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
+		        PIA_U461_IRA  = 0x80 | (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
 		        break;
 		    default :
 		        break;
 		}
     }
     
-    
-    
-    function interrupt() {
-    
-        document.getElementById('interrupts').value=tek.interruptCounter;
-    
-        //if (tek.interruptCounter%600==0) 
-        //tek.println('interrupt='+tek.interruptCounter+',ticks='+this.tstatesPerInterrupt+' cpu ticks/interrupt');
-        tek.interruptCounter++;
-    
-        if( tek.pinta ) {
-            tek.pinta = false;
-        }
-    
-        if( tek.interruptCounter % tek.frameSkip == 0 ) {
-            PIA_U461_CRA |= 0x80; // Set IRQA1.
-        }
-    
-        return;
-    
+    // For some reason, asserting the interrupt on an actual keyboard event
+    // does not produce an immediate response in emulation so the latency
+    // to detect a press is unacceptably long, so we just fire the keyboard
+    // interrupt on a regular refresh interval
+    function keyboardInterrupt() {
+        PIA_U461_CRA |= 0x80; // KEY-I feeds into CA1 to set IRQA1.
     }
-    
+ 
     this.checkIRQ = function() {
     	return	(PIA_U461_CRA & 0xC0) | (PIA_U461_CRB & 0xC0) |
     			(PIA_U565_CRA & 0xC0) | (PIA_U565_CRB & 0xC0) |
@@ -1101,14 +1041,16 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
     			(PIA_U361_CRA & 0xC0) | (PIA_U361_CRB & 0xC0) ;
     }
     
-    var int_interval;
     var exec_interval;
+    var key_interval;
     var dvst_emulate_interval;
 
     this.execute_start = function() {
 		exec_interval = setInterval( cpu.execute, 10 ); // 100 intervals per second
-        int_interval = setInterval( interrupt, 10 ); //    javascript setInterval minimum is 10msec
-        dvst_emulate_interval = setInterval( display.dvst_emulate, 200 );
+		key_interval = setInterval( keyboardInterrupt, 10 ); // 100 intervals per second
+        dvst_emulate_interval = setInterval( display.dvst_emulate, 100 );
+        // Deassert DRBUSY-O bit active low so display is ready immediately for CPU to use
+        PIA_U565_IRA = 0x04;
     }
     
     this.execute_fcnkey = function(keyCode, press) {
@@ -1121,13 +1063,14 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
-        clearInterval( int_interval );
+		clearInterval( keyboardInterrupt );
         clearInterval( dvst_emulate_interval );
     }
     
     this.execute_reset = function() {
 		cpu.reset();
 	    display.ERASE();
+	    interruptCounter = 0;
     }
     
 	this.execute_load = function( size, bytes ) {
@@ -1154,27 +1097,14 @@ function TEKTRONIX4051( window, canvas, logbuf ) {
 			 	
 		GPIB_STATE = 1; // File loaded.
 		
-		this.println( 'Selected file loaded from host operating system.' );
+		//this.println( 'Selected file loaded from host operating system.' );
 		
 	} // End of function execute_load.
     
-
 	
-    //local constructor
-    //initializes local variables
+	// Local constructor
     {
-
-	this.println("Booting jsTEKTRONIX4051...");
-
-	this.pinta = true;
-	this.interruptCounter = 0;
-	this.frameSkip = 1;
-
-	
-	this.execute_reset();
-	
-	this.println('TEKTRONIX4051 ready to go - just hit [start].');
-
+	    this.execute_reset();
     } // End of local constructor.
 
 } // End of function TEKTRONIX4051.

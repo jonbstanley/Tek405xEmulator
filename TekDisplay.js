@@ -13,6 +13,10 @@ function TekDisplay(hw, canvas) {
 	const pixel_store_inten  = 240;
 	const pixel_cursor_inten = 200;
 	
+	// Adjust position of graphics relative to canvas
+	const screen_x_offset = 20;
+	const screen_y_offset = 0;
+	
 	
     // ********************
     // ***              ***
@@ -94,19 +98,23 @@ function TekDisplay(hw, canvas) {
 
 
 	function setPixel( x, y, type ) {
+		my = height - y; // Convert to 'canvas' coordinates from Tektronix coordinates.
   
 		switch( type ) {
 			case 'ERASE' :
-		 		setPixelRGB( x, y, 0, 0, 0 ); // BLACK
+		 		setPixelRGB( x, my, 0, 0, 0 ); // BLACK
 				break;
 			case 'SOT' : // cursor refresh dot
-				setPixelRGB( x, y, 0, pixel_cursor_inten, 0 ); // DARK GREEN
+				// Do not replace pixel if it already has been stored!
+				if(canvasctx.getImageData(x, my, 1, 1).data[1] != pixel_store_inten) {
+				    setPixelRGB( x, my, 0, pixel_cursor_inten, 0 ); // DARK GREEN
+				}
 				break;
 			case 'ADOT' : // stored character dot
-				setPixelRGB( x, y, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
+				setPixelRGB( x, my, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
 				break;
 			case 'VECTOR' :
-				setPixelRGB( x, y, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
+				setPixelRGB( x, my, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
 				break;
 			default :
 				break;
@@ -114,9 +122,8 @@ function TekDisplay(hw, canvas) {
 	}
 
 	function setPixelRGB( x, y, r, g, b ) {	    
-		my = height - y; // Convert to 'canvas' coordinates from Tektronix coordinates.
 		canvasctx.fillStyle = "rgb("+r+","+g+","+b+")";
-		canvasctx.fillRect( x,my, 1,1 );
+		canvasctx.fillRect( x, y, 1,1 );
 	}
     
    
@@ -140,8 +147,8 @@ function TekDisplay(hw, canvas) {
 		VECTOR_0 = DISP_INFO[2];
 		VEN_1    = DISP_INFO[3];
 		
-		new_X = DISP_INFO[4];
-		new_Y = DISP_INFO[5];
+		new_X = DISP_INFO[4] + screen_x_offset;
+		new_Y = DISP_INFO[5] + screen_y_offset;
 			
 		if( type == 'BUFCLK' ) {
 		
@@ -184,9 +191,9 @@ function TekDisplay(hw, canvas) {
 			} else {
 			    // setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'SOT');
 				// double width and double height of cursor pixels
-				// but don't fill in completely, it is pixelated on the actual machine
-				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR, 'SOT' );
-				
+				// 2 setPixel calls instead of 4 because it's pixelated like on actual machine
+				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR, 'SOT' );
+				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR-1, 'SOT' );
 			}
 			adotpending = false;
 		} // End if sot.
@@ -245,10 +252,11 @@ function TekDisplay(hw, canvas) {
         }
         imgd.data.set(buf8);
         
-        // The DVST resets right after the screen flash
-        //setTimeout(function(){
+        // The DVST resets about 500 ms after the screen flash
+        setTimeout(function(){
             canvasctx.putImageData(imgd, 0, 0);
-         //   }, 10);  //timeout reduced to 10msec to prevent loss of first PRINTed characters after PAGE
+            hw.displayReady();
+            }, 500);
 		
 	}
 
