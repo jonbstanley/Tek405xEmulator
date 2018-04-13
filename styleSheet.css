@@ -1,0 +1,51 @@
+
+body 
+{
+    background: #888888;
+    text-align: center;
+}
+
+#container
+{
+    padding: 10px;
+    width: 1100px;
+    margin: auto;
+}
+
+.inline
+{
+    display: inline-block;
+    border: 1px;
+    vertical-align: middle;
+}
+
+.status
+{
+    width: 90px;
+    height: 40px;
+    margin: 50px auto;
+    margin-left: 80px;
+    border: medium solid #AAAAAA;
+    border-radius: 5px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 40px;
+    background: #000000;
+    color: #005500;
+}
+
+table 
+{
+    line-height:140%; 
+    padding:2px;
+}
+
+#screen
+{
+    width: 825px;
+    height: 660px;
+    display: block;
+	margin: 0 auto;
+	border: medium solid #AAAAAA;
+	border-radius: 25px;
+}

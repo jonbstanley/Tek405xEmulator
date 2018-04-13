@@ -150,9 +150,9 @@ function TekKeyboard(hw, window) {
 		
 		// Check for a key press or key release.
 		if( bool ) {
-		    hw.keyboardInterrupt('PRESS', i);
+		    hw.keyboardData('PRESS', i);
 		} else {
-		    hw.keyboardInterrupt('RELEASE');
+		    hw.keyboardData('RELEASE');
 		}
 		
       	e.returnValue = false;

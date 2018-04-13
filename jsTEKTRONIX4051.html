@@ -4,13 +4,7 @@
 
 <TITLE>jsTEKTRONIX4051 - A Tektronix 4051 emulator written in Javascript. Copyright (c) 2015 David E. Roberts.</TITLE>
 
-<style>
-body {font-size:small; line-height:140%; padding:2px;}
-table {font-size:small; line-height:140%; padding:2px;}
-a:hover {background:yellow}
-h1 {color:red}
-big {color:red}
-</style>
+<link rel='stylesheet' href='styleSheet.css' type='text/css' charset='utf-8'>
 
 <script src="MC6800.js"        language="JavaScript"></script>
 <script src="Tek4051Rom.js"    language="JavaScript"></script>
@@ -22,18 +16,20 @@ big {color:red}
 
 <body onload="tek_init();">
 
-<div style="width:2000px; margin: 2em auto 0 auto;">
+<div id="container">
+    <div class="inline">
+        <!-- NOTE: Canvas size set here is used by emulator for pixel locations, but is scaled down in CSS -->
+        <canvas id="screen" name="screen" width="1030" height="825"> </canvas>
+    </div>
+    <div class="inline">
+        <div class="status" id="status_power">POWER</div>
+        <div class="status" id="status_io">I/O</div>
+        <div class="status" id="status_break">BREAK</div>
+        <div class="status" id="status_busy">BUSY</div>
+    </div>
+</div>
 
-<table><tr>
-
-<td valign=top style="width:1000px;">
-<div id="middlecolumn" style="width:1000px;">
-
-<table>
-<tr>
-<td colspan="3"><canvas id="canvas" name="canvas" width="1030" height="814" style="border: medium solid ;"> </canvas></td>
-</tr>
-<tr><td>
+<table><tr><td>
 
 <table>
 <tr><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr>
@@ -104,44 +100,24 @@ big {color:red}
 <input id="stop"  value="pause" disabled="true" onclick="javascript:tek_stop();" type="button">
 <input id="reset" value="reset" onclick="javascript:tek_reset();" type="button">
 
-Interrupts:
-<input id="interrupts" value="0" size="5" type="text">
 
 GPIB PROGRAM LOAD:
 <input type='file' id='loadfile' onchange='javascript:tek_load()'>
 
-<br>
-
 </div>
 
-<div>
-<pre style="border: medium solid ;"><p id="logbuf">Console:
-</p>
-</pre>
-</div>
 
-<div>
+
 <script language="JavaScript">
 
 var tek;
-/*
-window.setInterval(tek_BLINK, 600);
 
-function tek_BLINK() {
-
-    tek.execute_BLINK();
-} // End of function tek_blink.
-*/
 
 function tek_init() {
-    
-    //rom_firmware();
-    
-    var mylogbuf    = document.getElementById('logbuf');
 
-    var mycanvas    = document.getElementById('canvas');
+    var canvas    = document.getElementById('screen');
     
-    tek = new TEKTRONIX4051( window, mycanvas, mylogbuf );
+    tek = new TEKTRONIX4051( window, canvas);
     
 } // End of function tek_init.
 
@@ -151,6 +127,7 @@ function tek_start() {
 
     document.getElementById('start').disabled   = true;
     document.getElementById('stop').disabled    = false;
+    document.getElementById('status_power').style.color = "#00EE00";
 
 } // End of function tek_start.
 
@@ -160,14 +137,13 @@ function tek_stop() {
 
     document.getElementById('start').disabled = false;
     document.getElementById('stop').disabled  = true;
+    document.getElementById('status_power').style.color = "#005500";
 
 } // End of function tek_stop.
 
 function tek_reset() {
 
     tek.execute_reset.call( tek );
-
-    tek.interruptCounter = 0;
 
 } // End of function tek_reset.
 
@@ -357,19 +333,8 @@ if( 1 == 1 ) {
 } // End of function tek_load.
 
 </script>
-</div>
 
 
-
-</div>
-</td>
-
-<td valign=top style="width:160px;">
-<br><br>
-</td>
-
-</tr></table>
-</div>
 </body>
 
 </html>
