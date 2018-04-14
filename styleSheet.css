@@ -33,6 +33,30 @@ body
     background: #000000;
     color: #005500;
 }
+.function_key
+{
+    width: 45px;
+    height: 20px;
+    border: medium solid #AAAAAA;
+    border-radius: 5px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 23px;
+    background: #ffffff;
+    color: #005500;
+}
+.edit_key
+{
+    width: 90px;
+    height: 20px;
+    border: medium solid #AAAAAA;
+    border-radius: 5px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 23px;
+    background: #ffffff;
+    color: #005500;
+}
 
 table 
 {
