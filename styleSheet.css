@@ -3,20 +3,27 @@ body
 {
     background: #888888;
     text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 #container
 {
     padding: 10px;
-    width: 1100px;
+    width: 1200px;
     margin: auto;
 }
 
 .inline
 {
     display: inline-block;
-    border: 1px;
     vertical-align: middle;
+}
+
+.inlinekeys
+{
+    display: inline-block;
+    vertical-align: top;
+    margin: 0 20px;
 }
 
 .status
@@ -32,36 +39,15 @@ body
     line-height: 40px;
     background: #000000;
     color: #005500;
-}
-.function_key
-{
-    width: 45px;
-    height: 20px;
-    border: medium solid #AAAAAA;
-    border-radius: 5px;
-    text-align: center;
-    vertical-align: middle;
-    line-height: 23px;
-    background: #ffffff;
-    color: #005500;
-}
-.edit_key
-{
-    width: 90px;
-    height: 20px;
-    border: medium solid #AAAAAA;
-    border-radius: 5px;
-    text-align: center;
-    vertical-align: middle;
-    line-height: 23px;
-    background: #ffffff;
-    color: #005500;
+    font-size: 1em;
+    font-weight: bold;
 }
 
 table 
 {
     line-height:140%; 
     padding:2px;
+    text-align: center;
 }
 
 #screen
@@ -72,4 +58,66 @@ table
 	margin: 0 auto;
 	border: medium solid #AAAAAA;
 	border-radius: 25px;
+}
+
+#keyboard
+{
+    text-align: left;
+    margin-top: 15px;
+}
+
+.keys
+{
+    color: #FFFFDD;
+    font-size: 0.7em;
+}
+
+.wider
+{
+    width: 7em;
+    height: 2em;
+}
+
+.key
+{
+    width: 45px;
+    height: 12px;
+    border: 2px solid #333333;
+    background: #AAAAAA;
+    cursor: pointer;
+    margin: auto;
+}
+
+.kbkey
+{
+    width: 50px;
+    height: 50px;
+    border: 2px solid #333333;
+    background: #666666;
+    cursor: pointer;
+    margin: auto;
+    border-radius: 6px;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.centerline {
+   width: 90%;
+   margin: auto;
+   text-align: center; 
+   padding: 10px;
+   height: 1em;
+}
+
+.centerline div {
+   width: 100%;
+   border-bottom: 2px solid #FFFFDD; 
+   margin-top: 0px;
+   height: 50%;
+}
+
+.centerline span { 
+    background: #888888;
+    padding: 0 5px;
+    margin: auto;
 }
