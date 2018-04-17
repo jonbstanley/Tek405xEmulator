@@ -83,7 +83,7 @@ function TekKeyboard(hw, window) {
 		  case 0x00DE : i = 0x3A; break; // ''' = ':'
 		  case 0x00BD : i = 0x3D; break; // '-' 
 		  case 0x00DD : i = 0x5D; break; // ']' 
-		  // '^' missing from table
+		  case 0x00DF : i = 0x5E; break; // '^' 
 		  case 0x00C0 : i = 0x40; break; // '`' = '@' 
 		  case 0x00BA : i = 0x3B; break;  // ';'
 		  case 0x00BF : i = 0x3F; break;  // '/'
