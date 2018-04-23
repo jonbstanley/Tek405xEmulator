@@ -136,8 +136,10 @@
                              onmouseup="javascript:tek.execute_fcnkey(0x00BA, false);">+<br>;</div></td>
 		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x00BD, true);" 
                              onmouseup="javascript:tek.execute_fcnkey(0x00BD, false);">=<br>-</div></td>
+		<td><div class="kbkey" onmousedown="javascript:tek.execute_fcnkey(0x002E, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x002E, false);">RUB<br>OUT</div></td>
 		<td><div class="kbkeybreak" onmousedown="javascript:tek.execute_fcnkey(0x007D, true);" 
-                             onmouseup="javascript:tek.execute_fcnkey(0x007C, false);">BREAK</div></td>
+                             onmouseup="javascript:tek.execute_fcnkey(0x007D, false);">BREAK</div></td>
 		<tr><td colspan="16"><div class="centerline"><div><span>Tektronix Keys</span></div></div></td></tr>
 		
 		</tr></table>
@@ -218,6 +220,7 @@ function tek_load() {
     var j; // Index into destination data.
     var BackslashSeen;
     var UnderscoreSeen;
+	var BackspaceSeen;
     var OneChar;
     
     var ASCIIbackslash  = 92;
@@ -229,6 +232,7 @@ function tek_load() {
     
     BackslashSeen  = 0; // None seen yet.
     UnderscoreSeen = 0; // None seen yet.
+	BackspaceSeen  = 0; // None seen yet.
     
     for( i=0; i<size; i++ ) {
     
@@ -241,15 +245,16 @@ function tek_load() {
 	  if( OneChar == 0x0A )
 	    OneChar = 0x0D;
 	  // Convert 0x08 into 0x00.
-	  if( OneChar == 0x08 )
+	  if( OneChar == 0x08 ) {
 	    OneChar = 0x00;
-	  
+		BackspaceSeen = 1;
+	  }
 if( 1 == 1 ) {
 	  if( OneChar == ASCIIunderscore ) {
 	  
 	    // Seen an ASCII '_' character.
 	    
-	    if( UnderscoreSeen == 1 ) {
+	    if( UnderscoreSeen == 1  && BackspaceSeen == 1 ) {
 	    
 	      // Current character is an underscore and the 'underscore seen' flag is set.
 	      
@@ -266,20 +271,21 @@ if( 1 == 1 ) {
 	    } else {
 	    
 	      // The current character is an underscore but the 'underscore seen' flag is clear.
-	      // Check if the previous character stored in the buffer is between '@' and '^' and
+	      // Check if the previous character stored in the buffer is between '@' and '_' and
 	      // (if so) convert into a control character. If not - set the 'underscore seen' flag.
 	      
 	      var temp = bytes[ j-1 ];
 	      
-	      if( (temp >= 0x40) && (temp <= 0x5E) ) {
+	      if( (temp >= 0x40) && (temp <= 0x5F)  && (BackspaceSeen==1) ) {
 	      
-	        // Convert to a control character.
+	        // Convert to a control character if underscore follows backspace
 	        //
 	        temp -= 0x40;
 	        
 	        // Store back away.
 	        //
 	        bytes[ j-1 ] = temp;
+			BackspaceSeen = 0; // now clear Backspace seen flag
 	        
 	      } else {
 	      
@@ -302,8 +308,8 @@ if( 1 == 1 ) {
 	    
 	    // Clear the 'underscore seen' flag.
 	    //	    
-	    UnderscoreSeen = 0;
-	    
+	   	// UnderscoreSeen = 0;
+			    
 	  } // End if current character is an '_'.
 	  
 } else {
