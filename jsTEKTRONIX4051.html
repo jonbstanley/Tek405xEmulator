@@ -219,8 +219,7 @@ function tek_load() {
     var i; // Index into source data.
     var j; // Index into destination data.
     var BackslashSeen;
-    var UnderscoreSeen;
-	var BackspaceSeen;
+    var BackspaceSeen;
     var OneChar;
     
     var ASCIIbackslash  = 92;
@@ -231,8 +230,7 @@ function tek_load() {
     j = 0;
     
     BackslashSeen  = 0; // None seen yet.
-    UnderscoreSeen = 0; // None seen yet.
-	BackspaceSeen  = 0; // None seen yet.
+    BackspaceSeen  = 0; // None seen yet.
     
     for( i=0; i<size; i++ ) {
     
@@ -254,29 +252,25 @@ if( 1 == 1 ) {
 	  
 	    // Seen an ASCII '_' character.
 	    
-	    if( UnderscoreSeen == 1  && BackspaceSeen == 1 ) {
+	    if( BackspaceSeen == 0 ) {
 	    
-	      // Current character is an underscore and the 'underscore seen' flag is set.
+	      // Current character is an underscore and the 'Backspace seen' flag is clear.
 	      
 	      // We really must want an underscore then!
 	      
   	      // Store the character away and bump the index.
 	      //
 	      bytes[ j++ ] = OneChar;
-	    
-	      // Clear the 'underscore seen' flag.
-	      //	    
-	      UnderscoreSeen = 0;
-	      
+	          
 	    } else {
 	    
-	      // The current character is an underscore but the 'underscore seen' flag is clear.
+	      // The current character is an underscore but the 'Backspace seen' flag is set.
 	      // Check if the previous character stored in the buffer is between '@' and '_' and
-	      // (if so) convert into a control character. If not - set the 'underscore seen' flag.
+	      // (if so) convert into a control character. If not - clear the 'backspace seen' flag.
 	      
 	      var temp = bytes[ j-1 ];
 	      
-	      if( (temp >= 0x40) && (temp <= 0x5F)  && (BackspaceSeen==1) ) {
+	      if( (temp >= 0x40) && (temp <= 0x5F) ) {
 	      
 	        // Convert to a control character if underscore follows backspace
 	        //
@@ -285,13 +279,8 @@ if( 1 == 1 ) {
 	        // Store back away.
 	        //
 	        bytes[ j-1 ] = temp;
+			
 			BackspaceSeen = 0; // now clear Backspace seen flag
-	        
-	      } else {
-	      
-	        // Set the 'underscore seen' flag.
-	        //
-	        UnderscoreSeen = 1;
 	        
 	      } // End if last character stored in range.
 	      
