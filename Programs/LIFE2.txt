@@ -6,9 +6,14 @@
 120 DATA 0,3,0,-3,3,0,-3,0  
 130 READ C,D
 240 PRINT "L_I_Game of LIFE - Dec 78 Byte Magazine__"
-255 PRINT "Enter initial number of ITERATIONS: ";
+242 PRINT "RULES:"  
+243 PRINT "1. Any live cell with fewer than two live neighbors dies."
+244 PRINT "2. Any live cell with two or three neighbors lives on."
+246 PRINT "3. Any live cell with three or more neighbors dies."
+248 PRINT "4. Any dead cell with exactly three live neighbors lives."
+255 PRINT "__Enter initial even number of ITERATIONS: ";
 256 INPUT L
-260 PRINT "__Enter initial Live Cell Coordinates (0,0 to run pgm): ";
+260 PRINT "__Enter initial Live Cell Coordinates__(0,0 to run pgm):"
 270 INPUT X,Y
 280 IF X+Y=0 THEN 470
 290 IF X<1 OR X>20 OR Y<1 OR Y>20 THEN 310
