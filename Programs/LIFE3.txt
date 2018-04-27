@@ -32,7 +32,7 @@
 325 REM put "1" in A$ for live cell at location x,y
 330 X=X+1
 334 Y=Y+1
-335 L$ = REP("1",(X+1)*M+Y+1,1)
+335 L$ = REP("1",(X)*M+Y+1,1)
 340 GO TO 270
 460 REM RUN THE PROGRAM
 470 L1=0
@@ -47,7 +47,7 @@
 550 REM  NOW DRAW THE LIVE CELLS AS 1.5 X 1.5 SQUARES
 560 FOR I=1 TO M-2
 570 FOR J=1 TO M-2
-575 C$=SEG(L$,(I+1)*M+J+1,1)
+575 C$=SEG(L$,(I)*M+J+1,1)
 580 IF C$="0" THEN 590
 582 MOVE (I-1)*2.25+0.37,(J-1)*2.25+0.37
 583 RDRAW C,D
@@ -56,23 +56,23 @@
 605 REM FIND NUMBER OF NEIGHBORS
 610 FOR I=1 TO M-2
 620 FOR J=1 TO M-2
-630 C$=SEG(L$,(I+1)*M+J+1,1)
+630 C$=SEG(L$,(I)*M+J+1,1)
 640 W=VAL(C$)
-650 C$=SEG(L$,(I*M)+(J),1)
+650 C$=SEG(L$,(I-1)*M+(J),1)
 652 N=VAL(C$)
-654 C$=SEG(L$,(I*M)*(J+1),1)
+654 C$=SEG(L$,(I-1)*M+(J+1),1)
 656 N=N+VAL(C$)
-658 C$=SEG(L$,(I*M)*(J+2),1)
+658 C$=SEG(L$,(I-1)*M+(J+2),1)
 660 N=N+VAL(C$)
-662 C$=SEG(L$,(I+1)*M+(J),1)
+662 C$=SEG(L$,(I)*M+(J),1)
 664 N=N+VAL(C$)
-666 C$=SEG(L$,(I+1)*M+(J+2),1)
+666 C$=SEG(L$,(I)*M+(J+2),1)
 668 N=N+VAL(C$)
-670 C$=SEG(L$,(I+2)*M+(J),1)
+670 C$=SEG(L$,(I+1)*M+(J),1)
 672 N=N+VAL(C$)
-674 C$=SEG(L$,(I+2)*M+(J+1),1)
+674 C$=SEG(L$,(I+1)*M+(J+1),1)
 676 N=N+VAL(C$)
-678 C$=SEG(L$,(I+2)*M+(J+2),1)
+678 C$=SEG(L$,(I+1)*M+(J+2),1)
 680 N=N+VAL(C$)
 730 IF W=0 THEN 750
 740 GO TO 800
@@ -86,7 +86,7 @@
 820 GO TO 850
 830 N=1
 850 C$=STR(N)
-855 N$=REP(C$,(I+1)*M+J+1,1)
+855 N$=REP(C$,(I)*M+J+1,1)
 860 NEXT J
 870 NEXT I
 880 L$=N$
