@@ -1,6 +1,6 @@
 100 PRINT "L_ *** LIFE from Dec 78 Byte page 76 ***"
 101 INIT
-102 PRINT "__INPUT GRID SIZE as EVEN NUMBER (max 100): ";
+102 PRINT "__INPUT GRID SIZE (max 100): ";
 103 INPUT M
 104 REM  Make room outside of grid for neighbor calc
 105 W=60/M
@@ -40,7 +40,7 @@
 244 PRINT "2. Any live cell with two or three neighbors lives on."
 246 PRINT "3. Any live cell with three or more neighbors dies."
 248 PRINT "4. Any empty cell with exactly three live neighbors lives."
-250 PRINT "__Enter initial even number of ITERATIONS: ";
+250 PRINT "__Enter initial number of ITERATIONS: ";
 251 INPUT T
 252 REM  DRAW THE THUMBNAIL AS 52 x 52
 253 MOVE 52,58
