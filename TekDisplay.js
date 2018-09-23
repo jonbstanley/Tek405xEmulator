@@ -14,8 +14,8 @@ function TekDisplay(hw, canvas) {
 	const pixel_cursor_inten = 200;
 	
 	// Adjust position of graphics relative to canvas
-	const screen_x_offset = 20;
-	const screen_y_offset = 0;
+	const screen_x_offset = 16;
+	const screen_y_offset = 10;
 	
 	
     // ********************
