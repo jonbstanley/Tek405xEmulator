@@ -1,7 +1,8 @@
 Added new "universal" HTML file that is compatible with all 4050 Control Characters
 ---------------------------------------------------------------------------------------
 I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file
--------------
+___________
+For the older programs with Character, backspace, underline - execute the older HTML file
 --------------
 
 Tektronix 4051 Javascript emulator
