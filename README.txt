@@ -1,4 +1,5 @@
-
+Added new "universal" HTML file that is compatible with all 4050 Control Characters
+------------
 Tektronix 4051 Javascript emulator
 ==================================
 
