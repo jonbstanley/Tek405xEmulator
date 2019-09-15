@@ -1,0 +1,383 @@
+<html>
+
+<head>
+
+<TITLE>jsTEKTRONIX4051 - A Tektronix 4051 emulator written in Javascript. Copyright (c) 2015 David E. Roberts.</TITLE>
+
+<link rel='stylesheet' href='styleSheet.css' type='text/css' charset='utf-8'>
+
+<script src="MC6800.js"        language="JavaScript"></script>
+<script src="Tek4051Rom.js"    language="JavaScript"></script>
+<script src="TekDisplay.js"    language="JavaScript"></script>
+<script src="TekKeyboard.js"    language="JavaScript"></script>
+<script src="TEKTRONIX4051.js" language="JavaScript"></script>
+
+</head>
+
+<body onload="tek_init();">
+<div id="container">
+
+<div class="inline">
+    <!-- NOTE: Canvas size set here is used by emulator for pixel locations, but is scaled down in CSS -->
+    <canvas id="screen" name="screen" width="1045" height="830"> </canvas>
+</div>
+<div class="inline">
+    <div class="status" id="status_busy">BUSY</div>
+    <div class="status" id="status_break">BREAK</div>
+    <div class="status" id="status_io">I/O</div>
+    <div class="status" id="status_power">POWER</div>
+</div>
+
+<div id="keyboard">
+
+    <div class="inlinekeys">
+        <table class="keys">
+        <tr><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr>
+        <tr>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0070, true);"             
+                             onmouseup="javascript:tek.execute_fcnkey(0x0070, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0071, true);"             
+                             onmouseup="javascript:tek.execute_fcnkey(0x0071, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0072, true);"             
+                             onmouseup="javascript:tek.execute_fcnkey(0x0072, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0073, true);"             
+                             onmouseup="javascript:tek.execute_fcnkey(0x0073, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0074, true);"             
+                             onmouseup="javascript:tek.execute_fcnkey(0x0074, false);" /></td></tr>
+        <tr><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><td colspan="5"><div class="centerline"><div><span>USER DEFINABLE</span></div></div></td></tr>
+        <tr><td>16</td><td>17</td><td>18</td><td>19</td><td>20</td></tr>
+        <tr>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0075, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0075, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0076, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0076, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0077, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0077, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0078, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0078, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0079, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0079, false);" /></td></tr>
+        <tr><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td></tr>
+        </table>
+    </div>
+    
+    <div class="inlinekeys">
+        <table class="keys">
+        <tr><td class="wider">COMPRESS</td><td class="wider">RUB OUT<br>&larr;</td><td class="wider">RUB OUT<br>&rarr;</td>
+            <td class="wider">REPRINT</td><td class="wider">RECALL<br>NEXT LINE</td><td></td><td></td></tr>
+        <tr>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0090, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0090, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0091, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0091, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0092, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0092, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0093, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0093, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0094,true);"
+                             onmouseup="javascript:tek.execute_fcnkey(0x0094, false);" /></td>
+        <tr><td class="wider">EXPAND</td><td class="wider">BACK<br>SPACE</td><td class="wider">SPACE</td>
+            <td class="wider">CLEAR</td><td class="wider">RECALL<br>LINE</td></tr>
+        <tr><td colspan="5"><div class="centerline"><div><span>LINE EDITOR</span></div></div></td></tr>
+        </table>
+    </div>
+    
+    <div class="inlinekeys">
+    <div>
+        <table class="keys">
+        <tr>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x007F, true);"
+                             onmouseup="javascript:tek.execute_fcnkey(0x007F, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_fcnkey(0x0080, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0080, false);" /></td>
+        <td><div class="key" onmousedown="javascript:tek.execute_copy();" /></td></tr>
+        <tr><td class="wider">AUTO<br>NUMBER</td><td class="wider">STEP<br>PROGRAM</td><td class="wider">MAKE<br>COPY</td></tr>
+		
+		</table>
+    </div>
+	
+	
+    </div>
+
+</div>
+
+<br>
+<div class="inline">
+<div>
+        <table class="keys">
+        <td><div class="kbkey" onmousedown="javascript:tek.execute_fcnkey(0x007C, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x007C, false);">HOME<br>PAGE</div></td>
+        <td><div class="kbkey" onmousedown="javascript:tek.execute_fcnkey(0x00DF, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x00DF, false);">~<br>^</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0031, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0031, false);">!<br>1</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0032, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0032, false);">"<br>2</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0033, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0033, false);">#<br>3</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0034, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0034, false);">$<br>4</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0035, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0035, false);">%<br>5</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0036, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0036, false);">&<br>6</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0037, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0037, false);">'<br>7</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0038, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0038, false);">(<br>8</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x0039, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x0039, false);">)<br>9</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x00C0, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x00C0, false);">`<br>@</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x00DE, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0xDE, false);">*<br>:</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x00BA, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x00BA, false);">+<br>;</div></td>
+		<td><div class="kbkeylight" onmousedown="javascript:tek.execute_fcnkey(0x00BD, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x00BD, false);">=<br>-</div></td>
+		<td><div class="kbkey" onmousedown="javascript:tek.execute_fcnkey(0x002E, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x002E, false);">RUB<br>OUT</div></td>
+		<td><div class="kbkeybreak" onmousedown="javascript:tek.execute_fcnkey(0x007D, true);" 
+                             onmouseup="javascript:tek.execute_fcnkey(0x007D, false);">BREAK</div></td>
+		<tr><td colspan="16"><div class="centerline"><div><span>Tektronix Keys</span></div></div></td></tr>
+		
+		</tr></table>
+    </div>
+<br>
+
+<input id="start" value="start" onclick="javascript:tek_start();" type="button">
+<input id="stop"  value="pause" disabled="true" onclick="javascript:tek_stop();" type="button">
+<input id="reset" value="reset" onclick="javascript:tek_reset();" type="button">
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GPIB PROGRAM LOAD:
+<input type='file' id='loadfile' onchange='javascript:tek_load()'>
+
+</div>
+
+
+
+<script language="JavaScript">
+
+var tek;
+
+
+function tek_init() {
+
+    var canvas    = document.getElementById('screen');
+    
+    tek = new TEKTRONIX4051( window, canvas);
+    
+} // End of function tek_init.
+
+function tek_start() {
+
+    tek.execute_start.apply( tek );
+
+    document.getElementById('start').disabled   = true;
+    document.getElementById('stop').disabled    = false;
+    document.getElementById('status_power').style.color = "#00EE00";
+
+} // End of function tek_start.
+
+function tek_stop() {
+
+    tek.execute_stop.apply( tek );
+
+    document.getElementById('start').disabled = false;
+    document.getElementById('stop').disabled  = true;
+    document.getElementById('status_power').style.color = "#005500";
+
+} // End of function tek_stop.
+
+function tek_reset() {
+
+    tek.execute_reset.call( tek );
+
+} // End of function tek_reset.
+
+function tek_load() {
+
+  // See what file has been selected by the user (if any).
+  var file = document.getElementById('loadfile').files[0];
+  
+  // Ignore if no file has been selected by the user.
+  if( !file )
+    return;
+    
+  // Create a new instance of the FileReader to actually read the selected file.
+  var fread = new FileReader();
+  
+  // This is the function invoked after a successful file load.
+  fread.onload = function( levent ) {
+  
+    var data = new DataView( levent.target.result );
+    
+    var size = levent.target.result.byteLength;
+    
+    var i; // Index into source data.
+    var j; // Index into destination data.
+    var BackslashSeen;
+    var BackspaceSeen;
+    var OneChar;
+    
+    var ASCIIbackslash  = 92;
+    var ASCIIunderscore = 95;
+    
+    var bytes = Array( size );
+    
+    j = 0;
+    
+    BackslashSeen  = 0; // None seen yet.
+    BackspaceSeen  = 0; // None seen yet.
+    
+    for( i=0; i<size; i++ ) {
+    
+      // Pick up the first/next character.
+      //
+      OneChar = data.getUint8( i );
+      
+      // Convert any Line Feeds (0x0A) into CRs (0x0D).
+	  //
+	  //if( OneChar == 0x0A )
+	  //  OneChar = 0x0D;
+	  // Convert 0x08 into 0x00.
+	  if( OneChar == 0x08 ) {
+	    OneChar = 0x08;
+		BackspaceSeen = 0;
+	  }
+if( 1 == 1 ) {
+	  if( OneChar == ASCIIunderscore ) {
+	  
+	    // Seen an ASCII '_' character.
+	    
+	    if( BackspaceSeen == 0 ) {
+	    
+	      // Current character is an underscore and the 'Backspace seen' flag is clear.
+	      
+	      // We really must want an underscore then!
+	      
+  	      // Store the character away and bump the index.
+	      //
+	      bytes[ j++ ] = OneChar;
+	          
+	    } else {
+	    
+	      // The current character is an underscore but the 'Backspace seen' flag is set.
+	      // Check if the previous character stored in the buffer is between '@' and '_' and
+	      // (if so) convert into a control character. If not - clear the 'backspace seen' flag.
+	      
+	      var temp = bytes[ j-1 ];
+	      
+	      if( (temp >= 0x40) && (temp <= 0x5F) ) {
+	      
+	        // Convert to a control character if underscore follows backspace
+	        //
+	        temp -= 0x40;
+	        
+	        // Store back away.
+	        //
+	        bytes[ j-1 ] = temp;
+			
+			BackspaceSeen = 0; // now clear Backspace seen flag
+	        
+	      } // End if last character stored in range.
+	      
+	    } // End if UnderscoreSeen.
+	    
+	  } else {
+	  
+	    // Not an ASCII '_' character.
+	    
+	    // Store the character away (if not null) and bump the index.
+	    //
+	    if( OneChar != 0x00 )
+	      bytes[ j++ ] = OneChar;
+	    
+	    // Clear the 'underscore seen' flag.
+	    //	    
+	   	// UnderscoreSeen = 0;
+			    
+	  } // End if current character is an '_'.
+	  
+} else {
+	  // Did we see a backslash on the last iteration of the loop?
+	  //
+	  if( BackslashSeen > 0 ) {
+	  
+	    // Yes - so process this character accordingly.
+	    
+	    // Is this character a backslash? If so - this means a real backslash is required!
+	    //
+	    if( OneChar == ASCIIbackslash ) {
+	    
+	      // A 'real' backslash is required - so store it and bump the index.
+	      //
+	      bytes[ j++ ] = OneChar;
+	      
+	      // Fall through...
+	      
+	    } else {
+	    
+	      // A 'control character' is required.
+	      //
+	      bytes[ j++ ] = (OneChar - 0x40) & 0xFF;
+	      
+	      // Fall through...
+	      
+	    } // End if backslash character.
+	    
+	    // Either way - clear the flag for the next iteration.
+	    //
+	    BackslashSeen = 0;
+	    
+	    // Fall through...
+	    
+	  } else {
+	  
+	    // No backslash character was seen last time.
+	    
+	    // Is this a backslash this time?
+	    
+	    if( OneChar == ASCIIbackslash ) {
+	      // YES. Set the flag only.
+	      
+	      BackslashSeen = 1;
+	      
+	      // fall through...
+	      	    
+	    } else {
+	    
+	      // Not a backslash. Store the character and bump the index.
+	      
+	      bytes[ j++ ] = OneChar;
+	      
+	      // Fall through...
+	      
+	    } // End if backslash character.
+	    
+	  } // End if BackslashSeen.
+} // End if patch.
+	  
+    } // End for.
+      
+    // There is a remote possibility that the BackslashSeen flag is set here.
+    // I will assume that would be a BASIC syntax error for now and ignore the
+    // fact. I can't think of a TekBASIC construct that would finish with a backslash.
+    
+    tek.execute_load.call( tek, j, bytes ); // Source and destination data length may be different.
+    
+  } // End of function fread.onload.
+  
+  // Initiate the file load.
+  fread.readAsArrayBuffer( file );
+  
+} // End of function tek_load.
+
+</script>
+
+
+</body>
+
+</html>
