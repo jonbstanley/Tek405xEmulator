@@ -2,7 +2,7 @@ Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Contro
 ---------------------------------------------------------------------------------------
 I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file      AND the 4051, 4052, 4052A and 4054A computers.
 -----------
-For the older programs with Character, backspace, underline - execute the older HTML file
+For the older programs from the Programs directory, and my older programs on the 4050 Program repository that have Character, backspace, underline - execute the older HTML file
 --------------
 
 Tektronix 4051 Javascript emulator
