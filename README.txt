@@ -1,4 +1,4 @@
-Added new [/B]"universal"[/B] HTML file that is compatible with all 4050 Control Characters
+Added new [B]"universal"[/B] HTML file that is compatible with all 4050 Control Characters
 ---------------------------------------------------------------------------------------
 I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file      AND the 4051, 4052, 4052A and 4054A computers.
 ___________
