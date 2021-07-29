@@ -6,12 +6,21 @@ function TekKeyboard(hw, window) {
     // ***                       ***
     // *****************************
 
-    function HandleKeyboardEvent( i, bool, e ) {
+var capsLockFlg = 1;    // Always check on first entry
+		
+    // Check Caps Lock state when flagged (see case 0x0014)
+	function HandleKeyboardEvent( i, bool, e ) {
 
+		if (capsLockFlg) {
+        hw.KBD_TTY_0 = e.getModifierState("CapsLock") ? 0 : 1; // Caps lock key status 0=on; 1 = off (negative logic sense)
+        capsLockFlg = 0;  // Reset flag
+    }
+		
 		//@@@ this.print('Key = '); this.printHex4( i ); this.print(' bool = '); this.print( bool ); this.print(' PC=0x'); this.printHex4( this.last_PC ); this.println('');
 		
 		// Decide what action to take depending upon the key code in 'i'.
 		//
+		
 		switch( i ) {
 		
 		  case 0x0010 : // Left or Right shift keys.
@@ -25,10 +34,10 @@ function TekKeyboard(hw, window) {
 		                i = 0; break;
 		                
 		  case 0x0014 : // Caps lock key.
-		                hw.KBD_TTY_0 = bool ? 0 : 1; // Caps lock key down = logical '0' (negative logic sense).
-		                                               // Caps lock key up   = logical '1'. 
-		                i = 0; break;
-		  
+		                // Caps lock key up = logical '1'.
+						capsLockFlg = 1; // Flag that caps lock pressed - state will be checked on next character received
+						i = 0; break;
+		  		  
 		  // Letters.
 		  case 0x0041 : // 'A'
 		  case 0x0042 : // 'B'
