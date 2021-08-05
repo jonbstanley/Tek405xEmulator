@@ -6,7 +6,15 @@ function TekKeyboard(hw, window) {
     // ***                       ***
     // *****************************
 
+    var capsLockFlg = 1;	// Always check on first entry 
+
     function HandleKeyboardEvent( i, bool, e ) {
+
+		// Check Caps Lock state when flagged (see case 0x0014)
+        if (capsLockFlg) {
+            hw.KBD_TTY_0 = e.getModifierState("CapsLock") ? 0 : 1;  // Caps lock key status 0=on; 1 = off (negative logic sense)
+            capsLockFlg = 0;  // Reset the flag
+        }
 
 		//@@@ this.print('Key = '); this.printHex4( i ); this.print(' bool = '); this.print( bool ); this.print(' PC=0x'); this.printHex4( this.last_PC ); this.println('');
 		
@@ -25,9 +33,12 @@ function TekKeyboard(hw, window) {
 		                i = 0; break;
 		                
 		  case 0x0014 : // Caps lock key.
-		                hw.KBD_TTY_0 = bool ? 0 : 1; // Caps lock key down = logical '0' (negative logic sense).
-		                                               // Caps lock key up   = logical '1'. 
+                        
+//		                hw.KBD_TTY_0 = bool ? 0 : 1; // Caps lock key down = logical '0' (negative logic sense).
+  	                                                   // Caps lock key up   = logical '1'. 
+                        capsLockFlg = 1;	// Flag that caps lock pressed - state will be checked on next character received
 		                i = 0; break;
+
 		  
 		  // Letters.
 		  case 0x0041 : // 'A'
@@ -170,6 +181,10 @@ function TekKeyboard(hw, window) {
 
     function handleEvent( e ) {
 		//console.log("You pressed: keyUniCode="+e.keyCode+",type="+e.type);
+        var storage = document.getElementById('storage');
+        if (storage) {
+            if (storage.style.display=="block") return;
+        }
         return HandleKeyboardEvent(e.keyCode, e.type=='keydown', e );
     }
     

@@ -8,6 +8,7 @@ body
 
 #container
 {
+    position: relative;
     padding: 10px;
     width: 1400px;
     margin: auto;
@@ -64,6 +65,43 @@ table
 {
     text-align: left;
     margin-top: 15px;
+}
+
+#program
+{
+    border: 2px solid #aaaaaa;
+    width:  620px;
+    height: 400px;
+    color: #ffffff;
+    background-color: #202020;
+    resize: none;
+}
+
+#prognum
+{
+  border: 2px solid #aaaaaa;
+  width:  40px;
+  color: #ffffff;
+  background-color: #202020;
+}
+
+#storage
+{
+    text-align: left;
+    position: absolute;
+    margin: auto;
+    left: 295px;
+    top: 50px;
+    border: solid #aaaaaa 2px;
+    padding: 10px;
+    color: #80ff00;
+    background-color: #777777;
+    opacity: 0.93;
+    font-size: 12px;
+    font-family: verdana;
+    width: 620px;
+    height: 570px;
+    box-shadow: 5px 5px 2px #333333;
 }
 
 .keys
@@ -146,3 +184,5 @@ table
     padding: 0 5px;
     margin: auto;
 }
+
+
