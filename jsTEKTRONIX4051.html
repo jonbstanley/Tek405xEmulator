@@ -172,6 +172,7 @@
                 <input id="start" value="start" onclick="javascript:tek_start();" type="button">
                 <input id="stop"  value="pause" disabled="true" onclick="javascript:tek_stop();" type="button">
                 <input id="reset" value="reset" onclick="javascript:tek_reset();" type="button">
+                <input id="mutespkr" value="✘ mute" onClick="toggleAudioStatus();" type="button" >
                 <input id="storeopts" value="storage" disabled="true" onClick="showStorageOptions();" type="button" >
             </td>
 
@@ -185,7 +186,7 @@
 <script language="JavaScript">
 
 var tek;
-
+var audioOn = true;
 
 function tek_init() {
 
@@ -409,6 +410,18 @@ if( 1 == 1 ) {
     
     tek.execute_load.call( tek, j, bytes ); // Source and destination data length may be different.
 }
+
+
+function toggleAudioStatus(){
+    mutebtn = document.getElementById('mutespkr');
+	audioOn = !audioOn;
+    if (audioOn) {
+        mutebtn.value = "✘ mute";        
+    }else{
+        mutebtn.value = "✔ mute";        
+    }
+}
+
 
 
 </script>

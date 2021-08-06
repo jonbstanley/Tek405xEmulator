@@ -787,7 +787,7 @@ function TEKTRONIX4051( window, canvas ) {
 									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;
 									var npb7 = (value             >>> 7) & 0x01;
 									if( opb7 != npb7 ) {
-										beep.play(); // This works - but not too well!
+										if (audioOn) beep.play(); // This works - but not too well!
 									} // End if.
 									PIA_U461_ORB = value;
 									GPIB_EOI_OUT = (PIA_U461_ORB >>> 4) & 0x01;
@@ -1012,7 +1012,7 @@ function TEKTRONIX4051( window, canvas ) {
         switch( type ) {
 			case 'PRESS' :
 			    PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F);
-			    click.play(); // This works - but not too well!
+			    if (audioOn) click.play(); // This works - but not too well!
 			    break;
 			case 'RELEASE' :
 		        PIA_U461_IRA  = 0x80 | (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
@@ -1063,7 +1063,8 @@ function TEKTRONIX4051( window, canvas ) {
 	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
-		clearInterval( keyboardInterrupt );
+		clearInterval( key_interval );
+//		clearInterval( keyboardInterrupt );
         clearInterval( dvst_emulate_interval );
     }
     
