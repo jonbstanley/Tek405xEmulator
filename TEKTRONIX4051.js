@@ -117,6 +117,14 @@ function TEKTRONIX4051( window, canvas ) {
     var GPIB_RDTIME_STATE = 0;
     var GPIB_RDTIME = "";
     var GPIB_RDTIME_INDEX = 0;
+
+    var LAST_CMD = 0;
+    var ADDR_PRIMARY = 0;
+    var ADDR_SECONDARY = 0;
+
+	var ADDR_TAPE = 5;	// Web storage "tape drive" address
+
+    this.current_fnumstr = 0;
     
     this.KBD_TTY_0   = 1;
     this.KBD_SHIFT_0 = 1;
@@ -127,6 +135,85 @@ function TEKTRONIX4051( window, canvas ) {
 	var beep = new Audio( "beep.mp3" );
 	
 	var click = new Audio( "click.mp3" );
+
+
+    // ***************
+    // ***         ***
+    // ***  print  ***
+    // ***         ***
+    // ***************
+
+    this.print = function( str ) {
+
+		console.print(str);
+
+    } // End of function print.
+
+    // *****************
+    // ***           ***
+    // ***  println  ***
+    // ***           ***
+    // *****************
+
+    this.println = function( str ) {
+
+	this.logbuf.textContent += str + "\n";
+
+	} // End of function println.
+
+    // ******************
+    // ***            ***
+    // ***  printHex  ***
+    // ***            ***
+    // ******************
+
+    this.printHex1 = function( n ) {
+
+      var nn = n & 0x000F; // Isolate the least significant 4 bits.
+
+      switch( nn ) {
+        case 0x0 : return '0';
+        case 0x1 : return '1';
+        case 0x2 : return '2';
+        case 0x3 : return '3';
+        case 0x4 : return '4';
+        case 0x5 : return '5';
+        case 0x6 : return '6';
+        case 0x7 : return '7';
+        case 0x8 : return '8';
+        case 0x9 : return '9';
+        case 0xA : return 'A';
+        case 0xB : return 'B';
+        case 0xC : return 'C';
+        case 0xD : return 'D';
+        case 0xE : return 'E';
+        case 0xF : return 'F';
+        default  : break;
+      } // End switch nn.
+
+    } // End of function printHex1.
+
+    this.printHex2 = function( n ) {
+		byte = "";
+		byte += this.printHex1( n >>> 4 ); // Hi nibble.
+		byte += this.printHex1( n       ); // Lo nibble.
+		return byte;
+    } // End of function printHex2.
+
+    this.printHex4 = function( n ) {
+		word = "";
+		word += this.printHex2( n >>> 8 ); // Hi word.
+		word += this.printHex2( n       ); // Lo word.
+		return word;
+    } // End of function printHex4.
+
+
+	this.programLoaded = function() {
+		GPIB_STATE = 3; // File loaded and seen the correct primary and secondary GPIB addresses.				
+		if( this.sbyteslength > 0 )
+		this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be loaded.
+	}
+
 
 
     // **********************
@@ -163,146 +250,220 @@ function TEKTRONIX4051( window, canvas ) {
 		console.log( ' NDAC='    ); this.printHex1( GPIB_NDAC_OUT );
 	    } */ // End if GPIB_LISTEN.
 		
-		// Process data from the 4951 to the GPIB.
+		// Process data from the 4051 to the GPIB.
 		if( GPIB_TALK ) {
 		
 			if( (GPIB_DAV_OUT == 1) && (GPIB_NDAC_IN == 1) ) {
 			
-				// Some 'new' command data for me.
-				
-				if( GPIB_ATN_OUT == 1 ) {
-				
-					// Some GPIB command data for me to process.
-					
-					//console.log( 'PROCESS_GPIB: COMMAND=0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
-					
-					if( GPIB_DATA_OUT == 0x42 ) {
-						//
-						GPIB_RDTIME_STATE = 1;
-						//
-					} else if( GPIB_DATA_OUT == 0x6D ) {
-						//
-						if( GPIB_RDTIME_STATE == 1 ) {
-							//
-							var d = new Date();
-							//
-							var m = [ "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" ];
-							//
-							GPIB_RDTIME = "";
-							//
-							var i;
-							//
-							i = d.getDate(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += "-";
-							GPIB_RDTIME += m[ d.getMonth() ];
-							GPIB_RDTIME += "-";
-							i = d.getFullYear() % 100; if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += " ";
-							i = d.getHours(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += ":";
-							i = d.getMinutes(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += ":";
-							i = d.getSeconds(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							//
-							GPIB_RDTIME_INDEX = 0; // First character of the DATE/TIME string.
-							//
-							//console.log( 'PROCESS_GPIB: RDTIME = ' + GPIB_RDTIME );
-							//
-							GPIB_RDTIME_STATE = 2;
-							//
-						} // End if
-						//
-					} // End if
-					
-					// Look for the GPIB Primary Address.
-					//
-					if( GPIB_DATA_OUT == 0x41 ) { // 0x41 == 65 == GPIB Device #1 Primary Talk Address.
-					
-						// State '1' means that the file has been loaded and is awaiting the correct GPIB Primary Address.
-						//
-						if( GPIB_STATE == 1 ) {
-						
-							GPIB_STATE = 2; // File has been loaded and I have now seen the correct GPIB Primary Address.
-							
-						// State '0' means that a file has not been loaded - so I should just ignore the GPIB Primary Address.
-						//
-						} else if( GPIB_STATE == 0 ) {
-						
-							// Ignore as no file is loaded.
-							
-						// I have seen a correct GPIB Primary Address - but potentially out of context!
-						//
-						} else if( GPIB_STATE >= 2 ) {
-						
-							GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
-							
-						} // End if.
-						 
-					} // End if correct GPIB Primary Address.
+				// Some GPIB command data for me to process.
 
-					// Look for the GPIB Secondary Address.
-					//
-					if( GPIB_DATA_OUT == 0x64 ) { // 0x64 == 100 == OLD/APPEND command.
+				if( GPIB_ATN_OUT == 1 ) {
+
+					// Its a PRIMARY listen (MLA) or talk (MTA) address
+                    if ( (GPIB_DATA_OUT > 0x20) && (GPIB_DATA_OUT < 0x60) ) {
+
+                        ADDR_PRIMARY = GPIB_DATA_OUT;
+
+						// Look for the GPIB Primary Address (device #1 - emulator).
+						if( GPIB_DATA_OUT == 0x41 ) { // 0x41 == 65 == GPIB Device #1 Primary Talk Address.
 					
-						// State '2' means that the file has been loaded, I have already seen the correct GPIB Primary Address and I
-						// am awaiting the correct GPIB Secondar Address.
-						//
-						if( GPIB_STATE == 2 ) { 
+							// State '1' means that the file has been loaded and is awaiting the correct GPIB Primary Address.
+							//
+							if( GPIB_STATE == 1 ) {
 						
-							GPIB_STATE = 3; // File loaded and seen the correct primary and secondary GPIB addresses.
+								GPIB_STATE = 2; // File has been loaded and I have now seen the correct GPIB Primary Address.
 							
-							if( this.sbyteslength > 0 )
+							// State '0' means that a file has not been loaded - so I should just ignore the GPIB Primary Address.
+							//
+							} else if( GPIB_STATE == 0 ) {
+						
+								// Ignore as no file is loaded.
+							
+							// I have seen a correct GPIB Primary Address - but potentially out of context!
+							//
+							} else if( GPIB_STATE >= 2 ) {
+						
+								GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
+							
+							} // End if.
+						 
+						} // End if correct GPIB Primary Address.
+
+
+						// Enable console log
+						if( GPIB_DATA_OUT == 0x42 ) {
+							//
+							GPIB_RDTIME_STATE = 1;
+							//
+						}
+
+					// Its a SECONDARY address command
+                    }else if ( (GPIB_DATA_OUT > 0x5F) && (GPIB_DATA_OUT < 0x80) ) {	// Secondary address
+
+						ADDR_SECONDARY = GPIB_DATA_OUT;
+
+						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+
+						if (ADDR_PRIMARY && ADDR_SECONDARY) {
+
+							// OLD/APPEND command
+							if( GPIB_DATA_OUT == 0x64 ) {
+
+								console.log("Primary address = " + this.printHex2(ADDR_PRIMARY));
+								console.log("OLD/APPEND command.");
+
+								if ( ADDR_PRIMARY == 0x41 ) {	// GPIB primary address = MTA1
+
+									console.log("Reset index on loaded file.");
+									this.programLoaded();
+
+								} // End ADDR_PRIMARY == 0x01
+
+								if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40)) {
+
+									if (this.current_fnumstr) {
+										console.log("Reading file: " + this.current_fnumstr);
+										readFromTape(this.current_fnumstr);
+										if (this.current_fnumstr != '0') this.programLoaded();
+									}
+
+								} // End ADDR_PRIMARY == (ADDR_TAPE + 0x40)
+
+							} // End GPIB_DATA_OUT == 0x64
+
+						} // End ADDR_PRIMARY && ADDR_SECONDARY
+
+
+/*
+						// Look for the GPIB Secondary Address.
+						//
+						if( GPIB_DATA_OUT == 0x64 ) { // 0x64 == 100 == OLD/APPEND command.
+					
+							// State '2' means that the file has been loaded, I have already seen the correct GPIB Primary Address and I
+							// am awaiting the correct GPIB Secondary Address.
+							//
+							if( GPIB_STATE == 2 ) { 
+						
+								GPIB_STATE = 3; // File loaded and seen the correct primary and secondary GPIB addresses.
+							
+								if( this.sbyteslength > 0 )
 								this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be loaded.
 
-						// State '0' means that a file has not been loaded - so I should just ignore the GPIB Secondary Address.
-						//
-						} else if( GPIB_STATE == 0 ) {
+							// State '0' means that a file has not been loaded - so I should just ignore the GPIB Secondary Address.
+							//
+							} else if( GPIB_STATE == 0 ) {
 						
-							// Ignore as no file is loaded.
+								// Ignore as no file is loaded.
 							
-						// State '1' means that a file has been loaded - but is awaiting the correct GPIB Primary Address - so I should just ignore the GPIB Secondary Address.
-						//
-						} else if( GPIB_STATE == 1 ) {
+							// State '1' means that a file has been loaded - but is awaiting the correct GPIB Primary Address
+							// - so I should just ignore the GPIB Secondary Address.
+							//
+							} else if( GPIB_STATE == 1 ) {
 						
-							// Ignore as no correct GPIB Primary Address seen so far.
+								// Ignore as no correct GPIB Primary Address seen so far.
 							
-						} else if( GPIB_STATE >= 3 ) {
+							} else if( GPIB_STATE >= 3 ) {
 						
-							GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
+								GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
 							
-						} // End if.
+							} // End if GPIB_STATE
 						 
-					} // End if.
-					
-					// Look for a GPIB 'UNTALK' Command.
-					if( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
-					
-						if( GPIB_STATE == 0 ) {
+						} // End if GPIB_DATA_OUT == 0x64
+*/
+
+
+						//console.log( 'PROCESS_GPIB: COMMAND=0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
+						if( GPIB_DATA_OUT == 0x6D ) {
+							//
+							if( GPIB_RDTIME_STATE == 1 ) {
+								//
+								var d = new Date();
+								//
+								var m = [ "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" ];
+								//
+								GPIB_RDTIME = "";
+								//
+								var i;
+								//
+								i = d.getDate(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += "-";
+								GPIB_RDTIME += m[ d.getMonth() ];
+								GPIB_RDTIME += "-";
+								i = d.getFullYear() % 100; if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += " ";
+								i = d.getHours(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += ":";
+								i = d.getMinutes(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += ":";
+								i = d.getSeconds(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								//
+								GPIB_RDTIME_INDEX = 0; // First character of the DATE/TIME string.
+								//
+								//console.log( 'PROCESS_GPIB: RDTIME = ' + GPIB_RDTIME );
+								//
+								GPIB_RDTIME_STATE = 2;
+								//
+							} // End if GPIB_RDTIME_STATE
+							//
+						} // End if GPIB_DATA_OUT == 0x6D
+
+					// Its a standard GPIB command
+					}else{ 
+
+						if ( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
+
+							if( GPIB_STATE == 0 ) {
 						
-							// Ignore as no file loaded.
+								// Ignore as no file loaded.
 							
-						} else {
+							} else {
 						
-							GPIB_STATE = 1; // Force to 'waiting for the correct GPIB Primary Address'.
-							GPIB_RDTIME_STATE = 0;
+								GPIB_STATE = 1; // Force to 'waiting for the correct GPIB Primary Address'.
+								GPIB_RDTIME_STATE = 0;
 							
-						} // End if.
+							} // End if.
+
+							ADDR_PRIMARY = 0;
+							ADDR_SECONDARY = 0;
 						
-					} // End if looking for GPIB 'UNTALK' command.
-					
-				} else {
-				
-					// Normal data for me.
-					// this.print( 'PROCESS_GPIB: NORMAL =0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
-					
-					//if( GPIB_DATA_OUT == 0x0D )
-						//this.println('');
-					//else
-						//this.print( "" + String.fromCharCode( GPIB_DATA_OUT ) );
-					
-				} // End if
-				
-			} // End if something to process.
+						} // End if looking for GPIB 'UNTALK' command.
+
+					}	// End decoding GPIB byte during ATN
+
+				} // End GPIB_ATN_OUT = 1
+
+				// Some parameter or data
+				if( GPIB_ATN_OUT == 0 ) {
+
+					//console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
+					//console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+					//console.log("GPIB data out: " + this.printHex2(GPIB_DATA_OUT));
+
+					if ( ADDR_PRIMARY && ADDR_SECONDARY) {
+
+						// console.log("Primary and secondary address set.");
+
+						// FIND command
+						if ( ADDR_SECONDARY == 0x7B ) {
+
+							//console.log("FIND command detected.");
+
+							// Preceding space singals new file number
+							if (GPIB_DATA_OUT == 0x20) this.current_fnumstr = "";
+
+							// Add numeric digits to file number string
+							if (GPIB_DATA_OUT > 0x29 && GPIB_DATA_OUT < 0x3A) {
+ 								this.current_fnumstr += String.fromCharCode(GPIB_DATA_OUT);
+								console.log("Set file number to: " + this.current_fnumstr);
+							}						
+						}
+
+					}
+
+				} // End GPIB_ATN_OUT = 0
+
+
+			} // End GPIB_DAV_OUT / GPIB_NDAC_IN (outbound data to process).
 
 			GPIB_NDAC_IN = GPIB_DAV_OUT ^ 0x01; // Invert before return.				
 		

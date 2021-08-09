@@ -1,5 +1,7 @@
 // Storage test script
 
+var uploadTo4051 = 0;
+
 function saveProgram(idx, progobj){
 	if (idx) {
         if (localStorage.getItem(idx)) {
@@ -46,7 +48,7 @@ function deleteProgram(idx){
 
 function selectProgram(){
     var program = document.getElementById('program').value;
-    upload_to_tek(str2addrbuf(program));
+    upload_to_tek(str2arraybuf(program));
 	closeStorage();
 }
 
@@ -63,13 +65,20 @@ function readFile(file){
     var freader = new FileReader();
     filenamefield.innerHTML = filename;
     freader.onload = function(ev) {
-        var filenamefield = document.getElementById('fname');
-        //console.log(ev.target.result);
-        program.value = ev.target.result;
+        var progobj = document.getElementById('program');
+        progobj.value = ev.target.result;
+		//console.log(progobj.value);
+		// If a direct upload to the emulator has bene requested
+		if (uploadTo4051) {
+			console.log("Uploading to Tek...");
+			upload_to_tek(str2arraybuf(progobj.value));	// Upload the program to the emulator
+			tek.programLoaded(); // Signal the emulator that the upload is complete
+			uploadTo4051 = 0; // Reset flag
+		}
+		// console.log("Upload done.");
     }
     freader.readAsText(file);
 }
-
 
 
 function dropHandler(ev) {
@@ -118,8 +127,13 @@ function exportProgram(content, filename, contentType) {
 
 function importProgram() {
     var file = document.getElementById('importFile').files[0];
-    var fread = new FileReader();
-    readFile(file);
+	readFile(file);
+/*
+    readfile(file).then(
+		result => console.log("File load complete."),
+		error => console.log("File load error!")
+	);
+*/
 }
 
 
@@ -129,7 +143,7 @@ function showStorageOptions(){
 }
 
 
-function str2addrbuf(str) {
+function str2arraybuf(str) {
   var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
   var bufView = new Uint16Array(buf);
   for (var i=0, strLen=str.length; i<strLen; i++) {
@@ -137,3 +151,22 @@ function str2addrbuf(str) {
   }
   return buf;
 }
+
+
+function readFromTape(idx) {
+console.log("Idx: " + idx);
+	if (idx != '0') {
+		// console.log("Loading from web storage...");
+		upload_to_tek(str2arraybuf(localStorage.getItem(idx)));
+	}else{
+		var progobj = document.getElementById('program');
+		progobj.value = "";
+		// Signal we want to upload directly into the emulator
+		uploadTo4051 = 1; 
+		// Trigger the file dialog to let the user choose a file
+		document.getElementById('importFile').click(); 
+		//console.log("Opened file import dialog");
+	}
+}
+
+
