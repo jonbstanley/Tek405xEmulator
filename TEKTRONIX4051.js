@@ -306,6 +306,19 @@ function TEKTRONIX4051( window, canvas ) {
 
 						if (ADDR_PRIMARY && ADDR_SECONDARY) {
 
+							// SAVE command
+							if ( GPIB_DATA_OUT == 0x61 ) {
+
+								console.log("Saving to file: " + this.current_fnumstr);
+/*
+								if( this.sbyteslength > 0 )
+								this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be saved.
+*/
+								saveToTapeReady();
+
+							} // End if SAVE
+
+
 							// OLD/APPEND command
 							if( GPIB_DATA_OUT == 0x64 ) {
 
@@ -327,11 +340,14 @@ function TEKTRONIX4051( window, canvas ) {
 										if (this.current_fnumstr != '0') this.programLoaded();
 									}
 
-								} // End ADDR_PRIMARY == (ADDR_TAPE + 0x40)
+								} // End if ADDR_PRIMARY == (ADDR_TAPE + 0x40)
 
-							} // End GPIB_DATA_OUT == 0x64
+							} // End if OLD/APPEND
 
-						} // End ADDR_PRIMARY && ADDR_SECONDARY
+
+
+
+						} // ADDR_PRIMARY && ADDR_SECONDARY
 
 
 /*
@@ -432,7 +448,7 @@ function TEKTRONIX4051( window, canvas ) {
 
 				} // End GPIB_ATN_OUT = 1
 
-				// Some parameter or data
+				// Send some parameter or data
 				if( GPIB_ATN_OUT == 0 ) {
 
 					//console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
@@ -442,6 +458,14 @@ function TEKTRONIX4051( window, canvas ) {
 					if ( ADDR_PRIMARY && ADDR_SECONDARY) {
 
 						// console.log("Primary and secondary address set.");
+
+						// SAVE command
+						if ( ADDR_SECONDARY == 0x61 ) {
+							if (this.current_fnumstr) {
+								saveToTapeBS(GPIB_DATA_OUT);
+								if (GPIB_EOI_OUT) saveToTapeDone(this.current_fnumstr);
+							}
+						}
 
 						// FIND command
 						if ( ADDR_SECONDARY == 0x7B ) {
@@ -469,6 +493,7 @@ function TEKTRONIX4051( window, canvas ) {
 		
 		} // End if GPIB_TALK.
 		
+
 		if( GPIB_LISTEN ) {
 		
 			// TODO:

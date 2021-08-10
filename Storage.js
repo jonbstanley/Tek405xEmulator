@@ -2,7 +2,9 @@
 
 var uploadTo4051 = 0;
 
-function saveProgram(idx, progobj){
+function saveProgram(){
+    var progobj = document.getElementById('program');
+    var idx = document.getElementById('prognum').value;
 	if (idx) {
         if (localStorage.getItem(idx)) {
             if (confirm("Overwrite existing program?")){
@@ -19,7 +21,8 @@ function saveProgram(idx, progobj){
 }
 
 
-function loadProgram(idx){
+function loadProgram(){
+    var idx = document.getElementById('prognum').value;
 	if (idx) {
 		progobj = document.getElementById('program');
 		progobj.value = localStorage.getItem(idx);
@@ -29,7 +32,8 @@ function loadProgram(idx){
 }
 
 
-function deleteProgram(idx){
+function deleteProgram(){
+    var idx = document.getElementById('prognum').value;
 	if (idx) {
         if (localStorage.getItem(idx)) {
             if (confirm("Delete existing program?")){
@@ -112,7 +116,8 @@ function dragOverHandler(event){
 }
 
 
-function exportProgram(content, filename, contentType) {
+function exportProgram(filename, contentType) {
+    var content = document.getElementById('program').value;
     const exported = document.createElement('a');
     const file = new Blob([content], {type: contentType});
   
@@ -128,12 +133,6 @@ function exportProgram(content, filename, contentType) {
 function importProgram() {
     var file = document.getElementById('importFile').files[0];
 	readFile(file);
-/*
-    readfile(file).then(
-		result => console.log("File load complete."),
-		error => console.log("File load error!")
-	);
-*/
 }
 
 
@@ -154,7 +153,7 @@ function str2arraybuf(str) {
 
 
 function readFromTape(idx) {
-console.log("Idx: " + idx);
+	// console.log("Read file idx: " + idx);
 	if (idx != '0') {
 		// console.log("Loading from web storage...");
 		upload_to_tek(str2arraybuf(localStorage.getItem(idx)));
@@ -169,4 +168,56 @@ console.log("Idx: " + idx);
 	}
 }
 
+
+function saveToTapeReady(){
+	var progobj = document.getElementById('program');
+	progobj.value = "";
+}
+
+
+function saveToTapeBU(pchar) {
+	var progobj = document.getElementById('program');
+	console.log(String.fromCharCode(pchar));
+	if (pchar == 0x0D) {
+		// Store CR as CR
+		progobj.value += String.fromCharCode(pchar);
+	}else if (pchar < 0x20) {
+		// Store control characters preceded with backspace+underscore and adjusted value
+		progobj.value += String.fromCharCode(0x10);
+		progobj.value += String.fromCharCode(0x5F);
+       	progobj.value += String.fromCharCode(pchar + 0x40);
+	}else{
+		// Store character
+		progobj.value += String.fromCharCode(pchar);
+	}
+}
+
+
+function saveToTapeBS(pchar) {
+	var progobj = document.getElementById('program');
+	console.log(String.fromCharCode(pchar));
+	if (pchar == 0x0D) {
+		// Store CR as CR
+		progobj.value += String.fromCharCode(pchar);
+	}else if (pchar < 0x20) {
+		// Store control characters preceded with backslash and adjusted value
+		progobj.value += String.fromCharCode(0x5C);
+       	progobj.value += String.fromCharCode(pchar + 0x40);
+	}else{
+		// Store character
+		progobj.value += String.fromCharCode(pchar);
+	}
+}
+
+
+function saveToTapeDone(idx) {
+	var progobj = document.getElementById('program');
+	var pnobj = document.getElementById('prognum');
+	pnobj.value = idx;
+	if (idx == '0') {
+		exportProgram('program.txt', 'text/plain');
+	}else{
+		saveProgram(idx, progobj);
+	}
+}
 

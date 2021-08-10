@@ -31,14 +31,14 @@
         </p>
         <p>
         <div style="position:absolute; left: 10px; bottom: 20px;">
-            <input type="button" value="Save" onClick="saveProgram(document.getElementById('prognum').value,     					document.getElementById('program'));"></input>
-            <input type="button" value="Load" onClick="loadProgram(document.getElementById('prognum').value, document.getElementById('program'));"></input>
-            <input type="button" value="Delete" onClick="deleteProgram(document.getElementById('prognum').value);"></input>
+            <input type="button" value="Save" onClick="saveProgram();"></input>
+            <input type="button" value="Load" onClick="loadProgram();"></input>
+            <input type="button" value="Delete" onClick="deleteProgram();"></input>
         </div>
         <div style="position:absolute; left: 190px; bottom: 20px;">
-            <input type="button" value="Export" onClick="exportProgram(document.getElementById('program').value, 'test.txt', 'text/plain');"></input>
+            <input type="button" value="Export" onClick="exportProgram('test.txt', 'text/plain');"></input>
             <input type="button" value="Import" onClick="document.getElementById('importFile').click();"></input>
-            <input type="file" id="importFile" onchange="importProgram(document.getElementById('program'));" hidden="true"></input>
+            <input type="file" id="importFile" onchange="importProgram();" hidden="true"></input>
         </div>
         <div style="position:absolute; right: 10px; bottom: 20px;">
             <input type="button" value="Select" onClick="selectProgram();"></input>
