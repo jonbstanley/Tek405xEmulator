@@ -20,11 +20,12 @@
 <div id="container">
 
     <div id="storage" hidden="true">
-        <h3>Program number:</h3>
-        <p>
-        <input type="text" id="prognum" name="prognum"></input>
-        </p>
-        <h3>Program code:</h3>
+		<p><b>Program number:</b></p>
+		<p>
+		Select: <select id="proglist" onchange="loadProgram();"></select>&emsp;
+		Add: <input type="text" id="prognum" name="prognum"></input>
+		</p>
+		<p><b>Program code:</b></p>
         <p>
         <textarea id="program" name="progwindow" rows="25" cols="74" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"></textarea><br>
         <span id="fname">Drop a file to this window</span>
@@ -34,12 +35,18 @@
             <input type="button" value="Save" onClick="saveProgram();"></input>
             <input type="button" value="Load" onClick="loadProgram();"></input>
             <input type="button" value="Delete" onClick="deleteProgram();"></input>
+            <input type="button" value="Clear" onClick="clearProgram();"></input>
         </div>
-        <div style="position:absolute; left: 190px; bottom: 20px;">
+        <div style="position:absolute; left: 232px; bottom: 20px;">
             <input type="button" value="Export" onClick="exportProgram('test.txt', 'text/plain');"></input>
             <input type="button" value="Import" onClick="document.getElementById('importFile').click();"></input>
             <input type="file" id="importFile" onchange="importProgram();" hidden="true"></input>
         </div>
+		<div style="position:absolute; left: 360px; bottom: 20px;">
+			<input type="button" value="Archive" onClick="archiveStorage('archive.tape', 'text/plain');"></input>
+			<input type="button" value="Restore" onClick="confirmRestore();"></input>
+			<input type="file" id="archive" onchange="importStorage();" hidden="true"></input>
+		</div>
         <div style="position:absolute; right: 10px; bottom: 20px;">
             <input type="button" value="Select" onClick="selectProgram();"></input>
             <input type="button" value="Cancel" onClick="closeStorage();"></input>

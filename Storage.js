@@ -3,8 +3,9 @@
 var uploadTo4051 = 0;
 
 function saveProgram(){
-    var progobj = document.getElementById('program');
     var idx = document.getElementById('prognum').value;
+    var progobj = document.getElementById('program');
+	var proglistobj = document.getElementById('proglist');
 	if (idx) {
         if (localStorage.getItem(idx)) {
             if (confirm("Overwrite existing program?")){
@@ -15,6 +16,9 @@ function saveProgram(){
         }else{
             localStorage.setItem(idx, progobj.value);
         }
+		clearProgList();
+		updateProgList();
+		proglistobj.value = idx;
 	}else{
 		alert("Program number required!");
 	}
@@ -22,7 +26,10 @@ function saveProgram(){
 
 
 function loadProgram(){
-    var idx = document.getElementById('prognum').value;
+    var prognumobj = document.getElementById('prognum');
+	var proglistobj = document.getElementById('proglist');
+	var idx = proglistobj.options[proglistobj.selectedIndex].text;
+	prognumobj.value = idx;
 	if (idx) {
 		progobj = document.getElementById('program');
 		progobj.value = localStorage.getItem(idx);
@@ -33,19 +40,24 @@ function loadProgram(){
 
 
 function deleteProgram(){
-    var idx = document.getElementById('prognum').value;
-	if (idx) {
+    var prognumobj = document.getElementById('prognum');
+	var proglistobj = document.getElementById('proglist');
+	var idx = proglistobj.options[proglistobj.selectedIndex].text;
+	if (idx != '') {
         if (localStorage.getItem(idx)) {
             if (confirm("Delete existing program?")){
 		        progobj = document.getElementById('program');
 		        progobj.value = "";
+				clearProgList();
                 localStorage.removeItem(idx);
+				updateProgList();
+				prognumobj.value = '';
             }
         }else{
             alert("Nothing to delete!");
         }
 	}else{
-		alert("Program number required!");
+		alert("Select a program number to delete!");
 	}
 }
 
@@ -54,6 +66,14 @@ function selectProgram(){
     var program = document.getElementById('program').value;
     upload_to_tek(str2arraybuf(program));
 	closeStorage();
+}
+
+
+function clearProgram(){
+    var prognumobj = document.getElementById('prognum');
+    var programobj = document.getElementById('program');
+	prognumobj.value = "";
+	programobj.value = "";
 }
 
 
@@ -80,6 +100,34 @@ function readFile(file){
 			uploadTo4051 = 0; // Reset flag
 		}
 		// console.log("Upload done.");
+    }
+    freader.readAsText(file);
+}
+
+
+function restoreStorage(file){
+    var freader = new FileReader();
+    freader.onload = function(ev) {
+		// Get the file contents
+        var archive = "";
+        archive = ev.target.result;
+		// console.log(archive);
+
+		// Clear the local storage ready for import
+		localStorage.clear();
+
+		// Rebuild local storage
+		var storageobj = JSON.parse(archive);
+		for (var key of Object.keys(storageobj)){
+			// console.log("Key: " + key);
+			// console.log(storageobj[key]);
+			localStorage.setItem(key, storageobj[key]);
+		}
+
+		clearProgList();
+		updateProgList();
+
+		alert("Restore complete.");
     }
     freader.readAsText(file);
 }
@@ -136,8 +184,37 @@ function importProgram() {
 }
 
 
+function archiveStorage(filename, contentType) {
+    var content = JSON.stringify(localStorage);
+    const exported = document.createElement('a');
+    const file = new Blob([content], {type: contentType});
+  
+    exported.href = URL.createObjectURL(file);
+    exported.download = filename;
+    exported.click();
+
+    URL.revokeObjectURL(exported.href);
+    exported.remove();
+}
+
+
+function confirmRestore() {
+	if (confirm("WARNING: This will overwite all current programs!")) {
+		document.getElementById('archive').click();
+	}
+}
+
+
+function importStorage() {
+  	var archive = document.getElementById('archive').files[0];
+	restoreStorage(archive);
+}
+
+
 function showStorageOptions(){
     var storage = document.getElementById('storage');
+	clearProgList();
+	updateProgList();
     storage.style.display="block";
 }
 
@@ -177,7 +254,7 @@ function saveToTapeReady(){
 
 function saveToTapeBU(pchar) {
 	var progobj = document.getElementById('program');
-	console.log(String.fromCharCode(pchar));
+	//console.log(String.fromCharCode(pchar));
 	if (pchar == 0x0D) {
 		// Store CR as CR
 		progobj.value += String.fromCharCode(pchar);
@@ -195,7 +272,7 @@ function saveToTapeBU(pchar) {
 
 function saveToTapeBS(pchar) {
 	var progobj = document.getElementById('program');
-	console.log(String.fromCharCode(pchar));
+	//console.log(String.fromCharCode(pchar));
 	if (pchar == 0x0D) {
 		// Store CR as CR
 		progobj.value += String.fromCharCode(pchar);
@@ -221,3 +298,30 @@ function saveToTapeDone(idx) {
 	}
 }
 
+
+function clearProgList() {
+	var proglistobj = document.getElementById('proglist');
+	var listlen = proglistobj.length;
+	while(listlen--){
+		proglistobj.remove(listlen);
+	}
+}
+
+
+function updateProgList(idx) {
+//alert("Initialising program list...");
+	var proglist = Object.keys(localStorage).sort(function(a,b){return a - b});
+	var proglistobj = document.getElementById('proglist');
+
+	// Create program list
+	for (var i=0; i<proglist.length; i++) {
+		var opt = document.createElement('option');
+		opt.textContent = proglist[i];
+		opt.value = proglist[i];
+		proglistobj.appendChild(opt);
+	}
+
+	// Delselect any selected option
+	proglistobj.selectedIndex = -1;
+
+}

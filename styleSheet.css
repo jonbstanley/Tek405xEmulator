@@ -63,7 +63,7 @@ table
 
 #keyboard
 {
-    text-align: left;
+#   text-align: left;
     margin-top: 15px;
 }
 
@@ -83,6 +83,24 @@ table
   width:  40px;
   color: #ffffff;
   background-color: #202020;
+}
+
+#tapelist
+{
+  border: 2px solid #aaaaaa;
+  width:  40px;
+  color: #ffffff;
+  background-color: #202020;
+
+}
+
+#proglist
+{
+  border: 2px solid #aaaaaa;
+  width:  40px;
+  color: #ffffff;
+  background-color: #202020;
+
 }
 
 #storage
@@ -185,4 +203,7 @@ table
     margin: auto;
 }
 
+.mainbtn {
+	width:	80px;
+}
 
