@@ -67,61 +67,6 @@ table
     margin-top: 15px;
 }
 
-#program
-{
-    border: 2px solid #aaaaaa;
-    width:  620px;
-    height: 400px;
-    color: #ffffff;
-    background-color: #202020;
-    resize: none;
-}
-
-#prognum
-{
-  border: 2px solid #aaaaaa;
-  width:  40px;
-  color: #ffffff;
-  background-color: #202020;
-}
-
-#tapelist
-{
-  border: 2px solid #aaaaaa;
-  width:  40px;
-  color: #ffffff;
-  background-color: #202020;
-
-}
-
-#proglist
-{
-  border: 2px solid #aaaaaa;
-  width:  40px;
-  color: #ffffff;
-  background-color: #202020;
-
-}
-
-#storage
-{
-    text-align: left;
-    position: absolute;
-    margin: auto;
-    left: 295px;
-    top: 50px;
-    border: solid #aaaaaa 2px;
-    padding: 10px;
-    color: #80ff00;
-    background-color: #777777;
-    opacity: 0.93;
-    font-size: 12px;
-    font-family: verdana;
-    width: 620px;
-    height: 570px;
-    box-shadow: 5px 5px 2px #333333;
-}
-
 .keys
 {
     color: #FFFFDD;
@@ -205,5 +150,116 @@ table
 
 .mainbtn {
 	width:	80px;
+}
+
+
+/* Styling related to Storage window */
+
+#storage
+{
+    text-align: left;
+    position: absolute;
+    margin: auto;
+    left: 295px;
+    top: 50px;
+    border: solid #aaaaaa 2px;
+    padding: 10px;
+    color: #80ff00;
+    background-color: #777777;
+    opacity: 0.93;
+    font-size: 12px;
+    font-family: verdana;
+    width: 620px;
+    height: 570px;
+    box-shadow: 5px 5px 2px #333333;
+}
+
+#fileViewer
+{
+  border: 2px solid #aaaaaa;
+  width:  620px;
+  height: 400px;
+  color: #ffffff;
+  background-color: #202020;
+  resize: none;
+}
+
+#fileNum
+{
+  border: 2px solid #aaaaaa;
+  width:  40px;
+  color: #ffffff;
+  background-color: #202020;
+}
+
+#progCtrls
+{
+  position: absolute;
+  top: 48px;
+  left: 10px;
+}
+
+#progWindow
+{
+  position: absolute;
+  top: 70px;
+  left: 10px;
+}
+
+#importCtrls
+{
+  position: absolute;
+#  border: 2px solid #aaaaaa;
+#  color: #ffffff;
+#  background-color: #202020;
+  top: 48px;
+  right: 10px;
+}
+
+#importbtn
+{
+  position: absolute;
+  right: 220px;
+}
+
+#importFile
+{
+  overflow: hidden;
+}
+
+#fileList
+{
+  width:  40px;
+}
+
+#importType
+{
+  width:  200px;
+}
+
+.storeselect
+{
+  border: 2px solid #aaaaaa;
+  color: #ffffff;
+  background-color: #202020;
+}
+
+.storebtns1
+{
+  position: absolute;
+  left: 10px;
+  bottom: 20px;
+}
+
+.storebtns3
+{
+  position: absolute;
+  right: 10px;
+  bottom: 20px;
+}
+
+.storebtn
+{
+  width: 60px;
 }
 
