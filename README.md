@@ -10,15 +10,17 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 Additions by Twilight Logic:
 
-- added feature to import/export files between the JavaScript emulator and Monty's Arduino 4924 emulator
+- added feature to allow import/export of files between the JavaScript emulator and Monty's Arduino 4924 emulator
+
+- added feature to allow the entire storage to be archived/imported as a single "tape" file archive"
 
 - added feature to drag and drop files on to the storage window
 
-- added local storage features to enable programs to be stored in the browser like a tape
+- added local storage features to enable programs to be stored in the browser and accessed like an external tape drive
 
 
 
-Additions by Monty:
+Additions by Monty McGraw:
 
 
 Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
