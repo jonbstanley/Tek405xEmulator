@@ -1,4 +1,4 @@
-Based on the original Tektronix 4051 Javascript Emulator by Dave found here:
+Based on the original Tektronix 4051 Javascript Emulator by Dave R. found here:
 
 https://drive.google.com/drive/folders/1uXHa34qDizMKOGZWemFbpUet1JlYxOEx
 
