@@ -1,9 +1,37 @@
+Based on the original Tektronix 4051 Javascript Emulator by Dave found here:
+
+https://drive.google.com/drive/folders/1uXHa34qDizMKOGZWemFbpUet1JlYxOEx
+
+and enhanced by Jon Stanley found here:
+
+https://github.com/jonbstanley/Tek405xEmulator
+
+
+
+Additions by Twilight Logic:
+
+- added feature to import/export files between the JavaScript emulator and Monty's Arduino 4924 emulator
+
+- added feature to drag and drop files on to the storage window
+
+- added local storage features to enable programs to be stored in the browser like a tape
+
+
+
+Additions by Monty:
+
+
 Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
 ---------------------------------------------------------------------------------------
 I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file      AND the 4051, 4052, 4052A and 4054A computers.
 -----------
 For the older programs from the Programs directory, and my older programs on the 4050 Program repository that have Character, backspace, underline - execute the older HTML file
 --------------
+
+
+
+Detailed description by Dave:
+
 
 Tektronix 4051 Javascript emulator
 ==================================
