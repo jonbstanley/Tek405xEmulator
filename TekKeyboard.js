@@ -1,4 +1,4 @@
-function TekKeyboard(hw, window) {
+function TekKeyboard(hw, windowobj) {
 
     // *****************************
     // ***                       ***
@@ -6,165 +6,82 @@ function TekKeyboard(hw, window) {
     // ***                       ***
     // *****************************
 
-    var capsLockFlg = 1;	// Always check on first entry 
+	var capsLockSet = false;
 
-    function HandleKeyboardEvent( i, bool, e ) {
+    function HandleKeyboardEvent( k, bool, scancode, e ) {
 
-		// Check Caps Lock state when flagged (see case 0x0014)
-        if (capsLockFlg) {
-            hw.KBD_TTY_0 = e.getModifierState("CapsLock") ? 0 : 1;  // Caps lock key status 0=on; 1 = off (negative logic sense)
-            capsLockFlg = 0;  // Reset the flag
-        }
+		var i = 0;
+
+
+		//console.log("Key pressed: " + k + "  ASCII code: " + k.charCodeAt());
+
 
 		//@@@ this.print('Key = '); this.printHex4( i ); this.print(' bool = '); this.print( bool ); this.print(' PC=0x'); this.printHex4( this.last_PC ); this.println('');
-		
-		// Decide what action to take depending upon the key code in 'i'.
-		//
-		switch( i ) {
-		
-		  case 0x0010 : // Left or Right shift keys.
-		                hw.KBD_SHIFT_0 = bool ? 0 : 1; // Shift key down = logical '0' (negative logic sense).
-		                                                 // Shift key up   = logical '1'. 
-		                i = 0; break;
-		                
-		  case 0x0011 : // Left or Right control keys.
-		                hw.KBD_CTRL_0 = bool ? 0 : 1; // Control key down = logical '0' (negative logic sense).
-		                                                // Control key up   = logical '1'. 
-		                i = 0; break;
-		                
-		  case 0x0014 : // Caps lock key.
-                        
-//		                hw.KBD_TTY_0 = bool ? 0 : 1; // Caps lock key down = logical '0' (negative logic sense).
-  	                                                   // Caps lock key up   = logical '1'. 
-                        capsLockFlg = 1;	// Flag that caps lock pressed - state will be checked on next character received
-		                i = 0; break;
 
-		  
-		  // Letters.
-		  case 0x0041 : // 'A'
-		  case 0x0042 : // 'B'
-		  case 0x0043 : // 'C'
-		  case 0x0044 : // 'D'
-		  case 0x0045 : // 'E'
-		  case 0x0046 : // 'F'
-		  case 0x0047 : // 'G'
-		  case 0x0048 : // 'H'
-		  case 0x0049 : // 'I'
-		  case 0x004A : // 'J'
-		  case 0x004B : // 'K'
-		  case 0x004C : // 'L'
-		  case 0x004D : // 'M'
-		  case 0x004E : // 'N'
-		  case 0x004F : // 'O'
-		  case 0x0050 : // 'P'
-		  case 0x0051 : // 'Q'
-		  case 0x0052 : // 'R'
-		  case 0x0053 : // 'S'
-		  case 0x0054 : // 'T'
-		  case 0x0055 : // 'U'
-		  case 0x0056 : // 'V'
-		  case 0x0057 : // 'W'
-		  case 0x0058 : // 'X'
-		  case 0x0059 : // 'Y'
-		  case 0x005A : // 'Z'
-		                break; // Nothing further to do.
+		// Deal with Shift, Control and CapsLock 
+		switch (k) {
+			case 'Shift' :
+				hw.KBD_SHIFT_0 = bool ? 0 : 1;	// Shift key down = logical '0' (negative logic sense).
+												// Shift key up   = logical '1'. 
+				//e.preventDefault();
+				k = '';
+				return;
+				break;
+			case 'Control' :
+				hw.KBD_CTRL_0 = bool ? 0 : 1;	// Control key down = logical '0' (negative logic sense).
+												// Control key up   = logical '1'.
+				k = '';
+				return;
+				break;
 
-		  // Numbers.
-		  case 0x0030 : // '0'
-		  case 0x0031 : // '1'
-		  case 0x0032 : // '2'
-		  case 0x0033 : // '3'
-		  case 0x0034 : // '4'
-		  case 0x0035 : // '5'
-		  case 0x0036 : // '6'
-		  case 0x0037 : // '7'
-		  case 0x0038 : // '8'
-		  case 0x0039 : // '9'
-		                break; // Nothing further to do.
-		  
-		  // Symbols.
-		  case 0x0008 : // BK SPACE
-		  case 0x0009 : // TAB
-		  case 0x000A : // LF
-		  case 0x000D : // RETURN
-		  case 0x001B : // ESC
-		                break; // Nothing further to do.
-		  case 0x007C : i = 0x6A; break; // <f13> = PAGE 
-		  case 0x00DB : i = 0x5B; break; // '[' 
-		  case 0x00DE : i = 0x3A; break; // ''' = ':'
-		  case 0x00BD : i = 0x3D; break; // '-' 
-		  case 0x00DD : i = 0x5D; break; // ']' 
-		  case 0x00DF : i = 0x5E; break; // '^' 
-		  case 0x00C0 : i = 0x40; break; // '`' = '@' 
-		  case 0x00BA : i = 0x3B; break;  // ';'
-		  case 0x00BF : i = 0x3F; break;  // '/'
-		  case 0x002E : i = 0x5F; break; // <DELETE> = RUBOUT
-		  case 0x00BC : i = 0x3C; break; // ',' 
-		  case 0x00BE : i = 0x3E; break; // '.'
-		  case 0x00DC : i = 0x5C; break; // '\'
-		  case 0x007D : i = 0x6B; break; // <f14> = BREAK 
-		  case 0x0020 : i = 0x10; break; // ' ' = SPACE  
+			case 'CapsLock' :
+				if (bool) {
+					capsLockSet = !capsLockSet;			// On capslock down toggle state of capslock
+					hw.KBD_TTY_0 = capsLockSet ? 0 : 1;	// Caps lock key down = logical '0' (negative logic sense).
+				}										  // Caps lock key up   = logical '1'. 
+				k = '';
+				return;
+				break;
+		}
 
-		  // Numeric keypad.
-		  case 0x0060 : i = 0x20; break; // '0'  
-		  case 0x006E : i = 0x2E; break; // '.'  
-		  case 0x0061 : i = 0x21; break; // '1'  
-		  case 0x0062 : i = 0x22; break; // '2'  
-		  case 0x0063 : i = 0x23; break; // '3'  
-		  case 0x0064 : i = 0x24; break; // '4'  
-		  case 0x0065 : i = 0x25; break; // '5'  
-		  case 0x0066 : i = 0x26; break; // '6'  
-		  case 0x0067 : i = 0x27; break; // '7'  
-		  case 0x0068 : i = 0x28; break; // '8'  
-		  case 0x0069 : i = 0x29; break; // '9'  
-		  // KC '(', 'E', ')' and '^' missing.
-		  case 0x006F : i = 0x2F; break; // '/'  
-		  case 0x006A : i = 0x2A; break; // '*'  
-		  case 0x006D : i = 0x2D; break; // '-'  
-		  case 0x006B : i = 0x2B; break; // '+'  
-		  
-		  // Function keys. Note - potential error in Tek documentation 0x5X versus 0x6X
-		  case 0x0070 : i = 0x60; break; // FK1  
-		  case 0x0071 : i = 0x61; break; // FK2
-		  case 0x0072 : i = 0x62; break; // FK3  
-		  case 0x0073 : i = 0x63; break; // FK4  
-		  case 0x0074 : i = 0x64; break; // FK5  
-		  case 0x0075 : i = 0x65; break; // FK6  
-		  case 0x0076 : i = 0x66; break; // FK7  
-		  case 0x0077 : i = 0x67; break; // FK8  
-		  case 0x0078 : i = 0x68; break; // FK9  
-		  case 0x0079 : i = 0x69; break; // FK10  
-		  
-		  // Line editing keys.
-		  case 0x0090 : i = 0x70; break; // EXPAND
-		  case 0x0091 : i = 0x71; break; // BK SPACE
-		  case 0x0092 : i = 0x72; break; // SPACE
-		  case 0x0093 : i = 0x73; break; // <f15> = CLEAR
-		  case 0x0094 : i = 0x74; break; // RECALL
+		// console.log("KBD_SHIFT: " + hw.KBD_SHIFT_0);
+		// console.log("K length: " + k.length);
 
+		// Decide which key to use (some keys require translation to Tek codes)
+		if ( k != '' ) {
+			if ( k.length > 1 ) {
+				// Look up the key ASCII character
+				i = keyLookup(k);
+			}else{
+				// Check for Tek shift mapping
+				hw.KBD_SHIFT_0 = tekShift(k.charCodeAt());
+				// Look up the key string
+				i = asciiLookup[k.charCodeAt()];
+			}
+		}else{
+			if (scancode>0) {
+				// Pass keyboard scan code directly
+				i = scancode;
+			}else{
+				i = 0;
+				return;
+			}
+		}
 
-		  // Tape control keys.
-//		  case 0x0000 : i = 0x77; break; // AUTO LOAD
-//		  case 0x0000 : i = 0x5C; break; // REWIND
-//		  case 0x0000 : i = 0x5D; break; // MAKE COPY
+		// console.log("Key to Tek: " + i);
+		// console.log("Shift status: " + hw.KBD_SHIFT_0);	// Down = 0, UP = 1;
 
-
-		  // Program control keys.
-		  case 0x007F : i = 0x75; break; // <f16> = AUTO NUM
-		  case 0x0080 : i = 0x76; break; // <f17> = STEP PROG
-
-		  default : i = 0; break; // Ignore the key press if I don't know what to map it to.
-		  
-		} // End switch.
-		
-		//@@@ this.print( 'KBDDEBUG: i = 0x' ); this.printHex2( i ); this.print( ' bool = ' ); this.printHex2( bool ); this.println( '' );
 		
 		// Check for a key press or key release.
 		if( bool ) {
-		    hw.keyboardData('PRESS', i);
+		    hw.keyboardPress(i);
 		} else {
-		    hw.keyboardData('RELEASE');
+		    hw.keyboardRelease();
 		}
+
+		// console.log("Done.");
+
+		//keyboardInterrupt();
 		
       	e.returnValue = false;
       	
@@ -179,29 +96,260 @@ function TekKeyboard(hw, window) {
     // ***               ***
     // *********************
 
+	// Hardware key events
     function handleEvent( e ) {
-		//console.log("You pressed: keyUniCode="+e.keyCode+",type="+e.type);
+        var storage = document.getElementById('storage');
+		// If storage dialog is displayed then ignore and return
+        if (storage) {
+            if (storage.style.display=="block") return;
+        }
+		// Did we get an emulated keypress scan code
+		if (e.detail.scancode) {
+			return HandleKeyboardEvent('', e.detail.type=='keydown', e.detail.scancode, e);
+		}else{		
+			// Otherwise execute keyboard handler
+        	return HandleKeyboardEvent(e.key, e.type=='keydown', 0, e );
+		}
+    }
+
+/*    
+	// Emulated key events
+	function handleEkeyEvent ( e ) {
         var storage = document.getElementById('storage');
         if (storage) {
             if (storage.style.display=="block") return;
         }
-        return HandleKeyboardEvent(e.keyCode, e.type=='keydown', e );
-    }
-    
+		
+	}
+*/
 
 	// ***************
     // ***         ***
     // ***  FcnKey ***
     // ***         ***
     // ***************
-
+/*
 	this.FcnKey = function(code, press) {
 		// code - key code for keyboard key
 		// press   - true for keydown, false for key up
 		var e = {keyCode:code, type:press ? "keydown" : "keyup", returnValue: false};
 		return handleEvent(e);
 	}
+*/
 
-    window.onkeydown = handleEvent;
-    window.onkeyup   = handleEvent;
+	// Most characters can be looked up in a table
+	var asciiLookup = [
+	//  Tek:-	   PC:-
+		0x00,	// 000 [00] Null
+		0x00,	// 001 [01] SOH (Start of heading)
+		0x00,	// 002 [02] STX (Start of text)
+		0x00,	// 003 [03] ETX (End of text)
+		0x00,	// 004 [04] EOT (End of transmission)
+		0x00,	// 005 [05] ENQ (Enquiry)
+		0x00,	// 006 [06] ACK (Acknowledge)
+		0x00,	// 007 [07] BEL (Bell)
+		0x08,	// 008 [08] BS  (Backspace)
+		0x09,	// 009 [09] TAB (Horizontal tab)
+		0x0A,	// 010 [0A] LF  (Line feed)
+		0x00,	// 011 [0B] VT  (Vertical tab)
+		0x00,	// 012 [0C] FF  (Form feed)
+		0x0D,	// 013 [0D] CR  (Carriage return)
+		0x00,	// 014 [0E] SO  (Shift out)
+		0x00,	// 015 [0F] SI  (Shift in)
+		0x10,	// 016 [10] DLE (Data link escape)
+		0x00,	// 017 [11] DC1 (Device control 1)
+		0x00,	// 018 [12] DC1 (Device control 2)
+		0x00,	// 019 [13] DC1 (Device control 3)
+		0x00,	// 020 [14] DC1 (Device control 4)
+		0x00,	// 021 [15] NAK (Negative acknowledge)
+		0x00,	// 022 [16] SYN (Synchronous idle)
+		0x00,	// 023 [17] ETB (End of transmiaaion block)
+		0x00,	// 024 [18] CAN (Cancel)
+		0x00,	// 025 [19] EM  (End of medium)
+		0x00,	// 026 [1A] SUB (Substitute)
+		0x1B,	// 027 [1B] ESC (Escape)
+		0x00,	// 028 [1C] FS  (File separator)
+		0x00,	// 029 [1D] GS  (Group separator)
+		0x00,	// 030 [1E] RS  (Record separator)
+		0x00,	// 031 [1F] US  (Unit separator)
+		0x10,	// 032 [20] Space
+		0x31,	// 033 [21] !
+		0x32,	// 034 [22] "
+		0x33,	// 035 [23] # [':']
+		0x34,	// 036 [24] $
+		0x35,	// 037 [25] %
+		0x36,	// 038 [26] &
+		0x37,	// 039 [27] '      ' ['@'] 0x40 0x37
+		0x38,	// 040 [28] (
+		0x39,	// 041 [29] )
+		0x2A,	// 042 [2A] *
+		0x3B,	// 043 [2B] +
+		0x3C,	// 044 [2C] ,
+		0x3D,	// 045 [2D] -
+		0x3E,	// 046 [2E] .
+		0x3F,	// 047 [2F] /
+		0x30,	// 048 [30] 0
+		0x31,	// 049 [31] 1
+		0x32,	// 050 [32] 2
+		0x33,	// 051 [33] 3
+		0x34,	// 052 [34] 4
+		0x35,	// 053 [35] 5
+		0x36,	// 054 [36] 6
+		0x37,	// 055 [37] 7
+		0x38,	// 056 [38] 8
+		0x39,	// 057 [39] 9
+		0x3A,	// 058 [3A] :
+		0x3B,	// 059 [3B] ;
+		0x3C,	// 060 [3C] <
+		0x3D,	// 061 [3D] =
+		0x3E,	// 062 [3E] >
+		0x3F,	// 063 [3F] ?
+		0x40,	// 064 [40] @
+		0x41,	// 065 [41] A
+		0x42,	// 066 [42] B
+		0x43,	// 067 [43] C
+		0x44,	// 068 [44] D
+		0x45,	// 069 [45] E
+		0x46,	// 070 [46] F
+		0x47,	// 071 [47] G
+		0x48,	// 072 [48] H
+		0x49,	// 073 [49] I
+		0x4A,	// 074 [4A] J
+		0x4B,	// 075 [4B] K
+		0x4C,	// 076 [4C] L
+		0x4D,	// 077 [4D] M
+		0x4E,	// 078 [4E] N
+		0x4F,	// 079 [4F] O
+		0x50,	// 080 [50] P
+		0x51,	// 081 [51] Q
+		0x52,	// 082 [52] R
+		0x53,	// 083 [53] S
+		0x54,	// 084 [54] T
+		0x55,	// 085 [55] U
+		0x56,	// 086 [56] V
+		0x57,	// 087 [57] W
+		0x58,	// 088 [58] X
+		0x59,	// 089 [59] Y
+		0x5A,	// 090 [5A] Z
+		0x5B,	// 091 [5B] [
+		0x5C,	// 092 [5C] Backslash
+		0x5D,	// 093 [5D] ]
+		0x5E,	// 094 [5E] ^
+		0x5F,	// 095 [5F] _
+		0x40,	// 096 [60] `
+		0x41,	// 097 [61] a
+		0x42,	// 098 [62] b
+		0x43,	// 099 [63] c
+		0x44,	// 100 [64] d
+		0x45,	// 101 [65] e
+		0x46,	// 102 [66] f
+		0x47,	// 103 [67] g
+		0x48,	// 104 [68] h
+		0x49,	// 105 [69] i
+		0x4A,	// 106 [6A] j
+		0x4B,	// 107 [6B] k
+		0x4C,	// 108 [6C] l
+		0x4D,	// 109 [6D] m
+		0x4E,	// 110 [6E] n
+		0x4F,	// 111 [6F] o
+		0x50,	// 112 [70] p
+		0x51,	// 113 [71] q
+		0x52,	// 114 [72] r
+		0x53,	// 115 [73] s
+		0x54,	// 116 [74] t
+		0x55,	// 117 [75] u
+		0x56,	// 118 [76] v
+		0x57,	// 119 [77] w
+		0x58,	// 120 [78] x
+		0x59,	// 121 [79] y
+		0x5A,	// 122 [7A] z
+		0x5B,	// 123 [7B] {
+		0x5C,	// 124 [7C] |
+		0x5D,	// 125 [7D] }
+		0x5E,	// 126 [7E] ~
+		0x7F	// 127 [7F] Delete (numeric keypad)
+
+	];
+
+
+	// Special keys generate strings in the 'key' parameter 
+	function keyLookup ( key ) {
+
+		//console.log("Looking up " + key);
+
+		switch (key) {
+			// Control keys
+			case "Alt"         : return 0x00; break;
+			case "AltGraph"    : return 0x00; break;
+			case "ArrowDown"   : return 0x00; break;
+			case "ArrowLeft"   : return 0x00; break;
+			case "ArrowRight"  : return 0x00; break;
+			case "ArrowUp"     : return 0x00; break;
+			case "Backspace"   : return 0x08; break;	// Back space
+			case "Control"     : return 0x11; break;
+			case "Capslock"    : return 0x14; break;
+			case "ContextMenu" : return 0x00; break;
+			case "Delete"      : return 0x5F; break;	// Rubout
+			case "End"         : return 0x6B; break;	// BREAK
+			case "Enter"       : return 0x0D; break;
+			case "Escape"      : return 0x1B; break;
+			case "F1"   	   : return 0x60; break; 
+			case "F2"   	   : return 0x61; break; 
+			case "F3"   	   : return 0x62; break; 
+			case "F4"   	   : return 0x63; break; 
+			case "F5"   	   : return 0x64; break; 
+			case "F6"   	   : return 0x65; break; 
+			case "F7"   	   : return 0x66; break;
+			case "F8"   	   : return 0x67; break; 
+			case "F9"   	   : return 0x68; break; 
+			case "F10"   	   : return 0x69; break; 
+			case "F11"   	   : return 0x00; break; 
+			case "F12"   	   : return 0x00; break;
+			case "F13"   	   : return 0x6A; break;	// [Mac] PAGE 
+			case "F14"   	   : return 0x6B; break;	// [Mac] BREAK
+			case "F15"   	   : return 0x73; break;	// [Mac] CLEAR 
+			case "F16"   	   : return 0x75; break;	// [Mac] AUTO NUM 
+			case "F17"   	   : return 0x76; break;	// [Mac] STEP PROG 
+			case "F18"   	   : return 0x00; break;	// [Mac]
+			case "F19"   	   : return 0x00; break;	// [Mac]
+			case "Home"        : return 0x6A; break; 	// PAGE£
+			case "Insert"      : return 0x73; break; 	// CLEAR
+			case "NumLock"     : return 0x70; break; 
+			case "PageDown"    : return 0x00; break;
+			case "PageUp"      : return 0x75; break;	// AUTO NUM
+			case "Pause"       : return 0x76; break;	// STEP PROG
+			case "ScrollLock"  : return 0x00; break;
+			case "Shift"       : return 0x10; break;
+			case "Tab"         : return 0x09; break;
+		}
+	}
+
+	// Some characters require the status of shift to be reversed
+	function tekShift(key) {
+
+		switch (key) {
+			case 0x23 : return !hw.KBD_SHIFT_0; break; // 7 => #
+			case 0x27 : return !hw.KBD_SHIFT_0; break; // 7 => '	
+//			case 0x2A : return !hw.KBD_SHIFT_0; break; // *		
+			case 0x3A : return !hw.KBD_SHIFT_0; break; // * => :
+			case 0x3D : return !hw.KBD_SHIFT_0; break; // - => =
+			case 0x40 : return !hw.KBD_SHIFT_0; break; // ` => @
+			case 0x5E : return !hw.KBD_SHIFT_0; break; // ~ => ^
+			default : 	return hw.KBD_SHIFT_0;
+		}	
+	};
+
+	// Hardware key events
+    windowobj.onkeydown = handleEvent;
+    windowobj.onkeyup   = handleEvent;
+
+	// Emulated key events
+	windowobj.addEventListener('kdbePress', function(ev) {
+		handleEvent(ev);
+	});
+	windowobj.addEventListener('kdbeRelease', function(ev) {
+		handleEvent(ev);
+	});
+
 }
+

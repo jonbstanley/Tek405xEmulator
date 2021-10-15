@@ -178,7 +178,7 @@ table
 {
   border: 2px solid #aaaaaa;
   width:  620px;
-  height: 400px;
+  height: 390px;
   color: #ffffff;
   background-color: #202020;
   resize: none;
@@ -186,20 +186,27 @@ table
 
 #fileNum
 {
-  border: 2px solid #aaaaaa;
-  width:  40px;
-  color: #ffffff;
-  background-color: #202020;
+  width:  35px;
 }
 
-#progCtrls
+#fileSecret
+{
+  width:  40px;
+}
+
+#fileSize
+{
+  width:  56px;
+}
+
+#fileInfoCtrls
 {
   position: absolute;
   top: 48px;
   left: 10px;
 }
 
-#progWindow
+#fileWindow
 {
   position: absolute;
   top: 70px;
@@ -209,11 +216,15 @@ table
 #importCtrls
 {
   position: absolute;
-#  border: 2px solid #aaaaaa;
-#  color: #ffffff;
-#  background-color: #202020;
-  top: 48px;
+  bottom: 52px;
   right: 10px;
+}
+
+#savefnum
+{
+  position: absolute;
+  bottom: 52px;
+  left: 10px;
 }
 
 #importbtn
@@ -227,9 +238,9 @@ table
   overflow: hidden;
 }
 
-#fileList
+#filelist
 {
-  width:  40px;
+  width:  50px;
 }
 
 #importType
@@ -237,29 +248,30 @@ table
   width:  200px;
 }
 
-.storeselect
-{
-  border: 2px solid #aaaaaa;
-  color: #ffffff;
-  background-color: #202020;
-}
-
-.storebtns1
+#storebtns1
 {
   position: absolute;
   left: 10px;
   bottom: 20px;
 }
 
-.storebtns3
+#storebtns3
 {
   position: absolute;
   right: 10px;
   bottom: 20px;
 }
 
+.storestyle1
+{
+  border: 2px solid #aaaaaa;
+  color: #ffffff;
+  background-color: #202020;
+}
+
 .storebtn
 {
   width: 60px;
 }
+
 

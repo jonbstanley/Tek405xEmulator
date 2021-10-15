@@ -24,11 +24,11 @@
  */
 
 
-function TEKTRONIX4051( window, canvas ) {
+function TEKTRONIX4051( windowObj, canvasObj ) {
 	
 	// Hardware components
-    var display = new TekDisplay(this, canvas);
-    var keyboard = new TekKeyboard(this, window);
+    var display = new TekDisplay(this, canvasObj);
+    var keyboard = new TekKeyboard(this, windowObj);
     var cpu = new TekCpu(this);
     var rom = new Tek4051Rom;
 	var ram = new Array(32*1024);
@@ -136,6 +136,10 @@ function TEKTRONIX4051( window, canvas ) {
 	
 	var click = new Audio( "click.mp3" );
 
+    // Random number generator mod
+    var RND_KC_BODGE0 = 0;
+    var RND_KC_BODGE1 = 0;
+    // Random number generator mod
 
     // ***************
     // ***         ***
@@ -215,6 +219,43 @@ function TEKTRONIX4051( window, canvas ) {
 	}
 
 
+	function GPIBlog(tekobj) {
+		var flagstr = "";
+		var gpibstr = "";
+
+		// GPIB signals
+		GPIB_IFC_OUT ? flagstr += "IF " : flagstr += "-- ";
+		GPIB_REN_OUT ? flagstr += "RN " : flagstr += "-- ";
+		GPIB_ATN_OUT ? flagstr += "AT " : flagstr += "-- ";
+		GPIB_SRQ_IN ? flagstr += "SQ " : flagstr += "-- ";
+		(GPIB_EOI_OUT || GPIB_EOI_IN) ? flagstr += "EI " : flagstr += "-- ";
+		(GPIB_DAV_OUT || GPIB_DAV_IN) ? flagstr += "DA " : flagstr += "-- ";
+		(GPIB_NRFD_OUT || GPIB_NRFD_IN) ? flagstr += "NR " : flagstr += "-- ";
+		(GPIB_NDAC_OUT || GPIB_NDAC_IN) ? flagstr += "ND " : flagstr += "  ";
+
+		// GPIB comands
+        if (GPIB_ATN_OUT) {
+			if ((GPIB_DATA_OUT > 0x20) && (GPIB_DATA_OUT < 0x40)) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " MLA";
+			}
+			if ((GPIB_DATA_OUT > 0x40) && (GPIB_DATA_OUT < 0x60)) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " MTA";
+			}else if ((GPIB_DATA_OUT > 0x5F) && (GPIB_DATA_OUT < 0x80)) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " MSA";
+			}
+		}else{
+			if (GPIB_LISTEN && GPIB_DAV_IN) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_IN) + " data in";
+			}
+			if (GPIB_TALK && GPIB_DAV_OUT) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " data out";
+			}
+		}
+
+		console.log(flagstr + gpibstr);
+
+	}
+
 
     // **********************
     // ***                ***
@@ -223,6 +264,10 @@ function TEKTRONIX4051( window, canvas ) {
     // **********************
     
     this.PROCESS_GPIB = function() {
+
+//		GPIBlog(this);
+
+
         /*
 		console.log( 'PROCESS_GPIB:' );
 
@@ -696,7 +741,8 @@ function TEKTRONIX4051( window, canvas ) {
 				// **************
 				// ***  U461  ***
 				// **************
-				
+
+/***** Random number generator mod				
 				case 0x87A8 : 	if( PIA_U461_CRA & 0x04 ) {
 									PIA_U461_CRA &= 0x3F; // Clear both interrupt bits.
 									// this.print('Reading U461 DRA value='); this.printHex2( (PIA_U461_IRA & (PIA_U461_DDRA ^ 0xFF)) | (PIA_U461_ORA & PIA_U461_DDRA) ); this.println('');
@@ -705,6 +751,23 @@ function TEKTRONIX4051( window, canvas ) {
 								} else
 									return PIA_U461_DDRA;
 								break;
+*/
+// Random number generator mod
+                case 0x87A8 :   if( PIA_U461_CRA & 0x04 ) {
+                                    PIA_U461_CRA &= 0x3F; // Clear both interrupt bits.
+                                    if( cpu.getLastPC() == 0x9716 ) {
+                                        if( RND_KC_BODGE1 > 0 ) {
+                                            RND_KC_BODGE1 = (RND_KC_BODGE1 - 1) & 0x3F; // Decrement if a count in progress.
+                                        } else {
+                                            RND_KC_BODGE1 = RND_KC_BODGE0; // Take a snapshot.
+                                        } // End if.
+                                        return RND_KC_BODGE1; // The result of the random keyboard counter is...
+                                    } else
+                                        return (PIA_U461_IRA & (PIA_U461_DDRA ^ 0xFF)) | (PIA_U461_ORA & PIA_U461_DDRA);
+                                } else
+                                    return PIA_U461_DDRA;
+                                break;
+// Random number generator mod
 								
 				case 0x87A9 : 	// this.print('Reading U461 CRA value='); this.printHex2( PIA_U461_CRA ); this.println('');
 								return PIA_U461_CRA;
@@ -1193,7 +1256,8 @@ function TEKTRONIX4051( window, canvas ) {
         // Deassert DRBUSY-O bit active low
         PIA_U565_IRA |= 0x04;
     }
-    
+
+/*    
     this.keyboardData = function(type, key) {
         switch( type ) {
 			case 'PRESS' :
@@ -1207,13 +1271,32 @@ function TEKTRONIX4051( window, canvas ) {
 		        break;
 		}
     }
+*/
     
+	this.keyboardPress = function(key) {
+		// Set or unset shift bit
+//		(this.KBD_SHIFT_0 & 0x01) ? (PIA_U461_IRB |= 0x01) : (PIA_U461_IRB &= ~0x01);
+
+		// Set CapsLock and key value
+		PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F);
+		if (audioOn) click.play(); // This works - but not too well!
+	}
+
+
+	this. keyboardRelease = function() {
+		PIA_U461_IRA  = 0x80 | (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
+	}
+
+
     // For some reason, asserting the interrupt on an actual keyboard event
     // does not produce an immediate response in emulation so the latency
     // to detect a press is unacceptably long, so we just fire the keyboard
     // interrupt on a regular refresh interval
     function keyboardInterrupt() {
         PIA_U461_CRA |= 0x80; // KEY-I feeds into CA1 to set IRQA1.
+        // Random number generator mod
+        RND_KC_BODGE0 = (RND_KC_BODGE0 + 1) & 0x3F;
+        // Random number generator mod
     }
  
     this.checkIRQ = function() {
@@ -1238,10 +1321,30 @@ function TEKTRONIX4051( window, canvas ) {
         // Deassert DRBUSY-O bit active low so display is ready immediately for CPU to use
         PIA_U565_IRA = 0x04;
     }
-    
+
+/* Original keyCode version
     this.execute_fcnkey = function(keyCode, press) {
-		keyboard.FcnKey( keyCode , press );
+		if (press) {
+			var ev = new KeyboardEvent('keydown', {'keyCode':keyCode,'which':keyCode});
+		}else{
+			var ev = new KeyboardEvent('keyup', {'keyCode':keyCode,'which':keyCode});
+		}
+		windowObj.dispatchEvent(ev);
+//		keyboard.FcnKey( keyCode , press );
     }
+*/
+
+    this.fcnkey_press = function(keyCode) {
+		var ev = new CustomEvent('kdbePress', { detail: {'scancode': keyCode, 'type': 'keydown' } });
+		windowObj.dispatchEvent(ev);
+    }
+
+
+    this.fcnkey_release = function(keyCode) {
+		var ev = new CustomEvent('kdbeRelease', { detail: {'scancode': keyCode, 'type': 'keyup' } });
+		windowObj.dispatchEvent(ev);
+    }
+
     
     this.execute_copy = function() {
 		display.COPY();
@@ -1249,7 +1352,7 @@ function TEKTRONIX4051( window, canvas ) {
 	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
-		clearInterval( key_interval );
+//		clearInterval( key_interval );
 //		clearInterval( keyboardInterrupt );
         clearInterval( dvst_emulate_interval );
     }
