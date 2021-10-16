@@ -342,6 +342,25 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 							//
 						}
 
+						if ( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
+
+							if( GPIB_STATE == 0 ) {
+						
+								// Ignore as no file loaded.
+							
+							} else {
+						
+								GPIB_STATE = 1; // Force to 'waiting for the correct GPIB Primary Address'.
+								GPIB_RDTIME_STATE = 0;
+							
+							} // End if.
+
+							ADDR_PRIMARY = 0;
+							ADDR_SECONDARY = 0;
+						
+						} // End if looking for GPIB 'UNTALK' command.
+
+
 					// Its a SECONDARY address command
                     }else if ( (GPIB_DATA_OUT > 0x5F) && (GPIB_DATA_OUT < 0x80) ) {	// Secondary address
 
@@ -467,27 +486,6 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 							} // End if GPIB_RDTIME_STATE
 							//
 						} // End if GPIB_DATA_OUT == 0x6D
-
-					// Its a standard GPIB command
-					}else{ 
-
-						if ( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
-
-							if( GPIB_STATE == 0 ) {
-						
-								// Ignore as no file loaded.
-							
-							} else {
-						
-								GPIB_STATE = 1; // Force to 'waiting for the correct GPIB Primary Address'.
-								GPIB_RDTIME_STATE = 0;
-							
-							} // End if.
-
-							ADDR_PRIMARY = 0;
-							ADDR_SECONDARY = 0;
-						
-						} // End if looking for GPIB 'UNTALK' command.
 
 					}	// End decoding GPIB byte during ATN
 
