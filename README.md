@@ -8,11 +8,14 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 
 
-Additions by Twilight Logic:
+Further additions by Twilight Logic (15 Oct 2021):
 
 - added feature to allow import/export of files between the JavaScript emulator and Monty's Arduino 4924 emulator
 
 - added feature to allow the entire storage to be archived/imported as a single "tape" file archive"
+
+
+Additions by Twilight Logic:
 
 - added feature to drag and drop files on to the storage window
 
