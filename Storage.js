@@ -97,8 +97,9 @@ function deleteFile(){
 
 
 function selectFile(){
-    var filecontent = document.getElementById('fileViewer').value;
-    upload_to_tek(str2arraybuf(filecontent));
+//    var filecontent = document.getElementById('fileViewer').value;
+//    upload_to_tek(str2arraybuf(filecontent));
+    upload_to_tek(content.buffer);
 	closeStorage();
 }
 
