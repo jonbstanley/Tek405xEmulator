@@ -7,24 +7,47 @@ and enhanced by Jon Stanley found here:
 https://github.com/jonbstanley/Tek405xEmulator
 
 
+<B>Updates by Twilight Logic</B>
 
-Further additions by Twilight Logic (15 Oct 2021):
+Update 01 Nov 2021:
 
-- added feature to allow import/export of files between the JavaScript emulator and Monty's Arduino 4924 emulator
+  - the display has been updated by Monty McGraw to enable refresh graphics
 
-- added feature to allow the entire storage to be archived/imported as a single "tape" file archive"
+  - implemented additional commands to read/write from web storage: PRINT, INPUT, WRITE, READ, BSAVE, BOLD
+
+  - implemented ROM Expander (4051E01)
+
+  - implemented ROM backpack right slot
+
+  Known issues:
+
+  - export to 4924 Emulator directory does not export all files. It will, however, export up to around 10 files at a time.
 
 
-Additions by Twilight Logic:
+Update 15 Oct 2021:
 
-- added feature to drag and drop files on to the storage window
+  - added feature to allow import/export of files between the JavaScript emulator and Monty's Arduino 4924 emulator
 
-- added local storage features to enable programs to be stored in the browser and accessed like an external tape drive
+  - added feature to allow the entire storage to be archived/imported as a single "tape" file archive"
+
+  - implemented Dave R's fix for the random number generator
+
+  - updated Keyboard.js and re-mapped keyboard to use standard PC keys
+
+
+Previous:
+
+  - added feature to drag and drop files on to the storage window
+
+  - added local storage features to enable programs to be stored in the browser and accessed like an external tape drive
 
 
 
-Additions by Monty McGraw:
+<B>Additions by Monty McGraw:</B>
 
+01 Nov 2021 - display updated to enable refresh graphics
+
+Previous:
 
 Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
 ---------------------------------------------------------------------------------------

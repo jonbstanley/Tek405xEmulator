@@ -64,11 +64,17 @@ function TekDisplay(hw, canvas) {
 		
 		do {
 		
-			// double vector pixel width and height
+			if (VEN_1 == 1) {
+			
+			// double vector pixel width and height for normal vectors
 			setPixel( x0+2, y0+2, 'VECTOR' );
 			setPixel( x0+1, y0+2, 'VECTOR' );
 			setPixel( x0+2, y0+1, 'VECTOR' );
 			setPixel( x0+1, y0+1, 'VECTOR' );
+			} else {
+			// single vector pixel width and height for refresh vectors
+			setPixel( x0+1, y0+1, 'RVECTOR' );
+			}
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
@@ -105,6 +111,12 @@ function TekDisplay(hw, canvas) {
 		 		setPixelRGB( x, my, 0, 0, 0 ); // BLACK
 				break;
 			case 'SOT' : // cursor refresh dot
+				// Do not replace pixel if it already has been stored!
+				if(canvasctx.getImageData(x, my, 1, 1).data[1] != pixel_store_inten) {
+				    setPixelRGB( x, my, 0, pixel_cursor_inten, 0 ); // DARK GREEN
+				}
+				break;
+			case 'RVECTOR' : // vector refresh dot  -- added by mcm for refresh vector support
 				// Do not replace pixel if it already has been stored!
 				if(canvasctx.getImageData(x, my, 1, 1).data[1] != pixel_store_inten) {
 				    setPixelRGB( x, my, 0, pixel_cursor_inten, 0 ); // DARK GREEN
@@ -150,12 +162,13 @@ function TekDisplay(hw, canvas) {
 		new_X = DISP_INFO[4] + screen_x_offset;
 		new_Y = DISP_INFO[5] + screen_y_offset;
 			
-		if( type == 'BUFCLK' ) {
+		if ( type == 'BUFCLK' ) {
 		
 			var old_X = X_DA;
 			var old_Y = Y_DA;
 
-			if( (VEN_1 == 1) && (VECTOR_0 == 0) )
+			// moved VEN_1 test to function VECTOR to enable persistent AND refresh vectors
+			if( (VECTOR_0 == 0) )
 				VECTOR( old_X, old_Y, new_X, new_Y );
 		    
 			// DER 9th August 2014 - Add debug code for drawing vectors.

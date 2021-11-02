@@ -149,7 +149,9 @@ table
 }
 
 .mainbtn {
-	width:	80px;
+    width:	     80px;
+    height:          24px;
+    vertical-align:  bottom;
 }
 
 

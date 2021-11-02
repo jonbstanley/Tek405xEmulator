@@ -32,6 +32,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
     var cpu = new TekCpu(this);
     var rom = new Tek4051Rom;
 	var ram = new Array(32*1024);
+    var romexp = new ROMexp;
+    var storage = new Storage();
 
     // MC6820 PIA notation
     //  * CRA = Control Register A
@@ -124,13 +126,18 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 	var ADDR_TAPE = 5;	// Web storage "tape drive" address
 
-    this.current_fnumstr = 0;
+    var current_fnumstr = 0;
+    var bin_data_length = 0;
+    var bin_byte_cnt = 0;
+    var bin_data_type = 0;
     
     this.KBD_TTY_0   = 1;
     this.KBD_SHIFT_0 = 1;
     this.KBD_CTRL_0  = 1;
     
-	this.BANK_SWITCH_SELECTOR = 0;
+    // 0-disable; 1-enable
+	var BANK_SWITCH_SELECTOR = 0;
+    var BSX_ADDRESS = 0;
 	
 	var beep = new Audio( "beep.mp3" );
 	
@@ -311,7 +318,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 						// Look for the GPIB Primary Address (device #1 - emulator).
 						if( GPIB_DATA_OUT == 0x41 ) { // 0x41 == 65 == GPIB Device #1 Primary Talk Address.
-					
+
 							// State '1' means that the file has been loaded and is awaiting the correct GPIB Primary Address.
 							//
 							if( GPIB_STATE == 1 ) {
@@ -335,13 +342,14 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 						} // End if correct GPIB Primary Address.
 
 
-						// Enable console log
+						// Enable clock response on address 2
+/*
 						if( GPIB_DATA_OUT == 0x42 ) {
 							//
 							GPIB_RDTIME_STATE = 1;
 							//
 						}
-
+*/
 						if ( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
 
 							if( GPIB_STATE == 0 ) {
@@ -366,96 +374,68 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 						ADDR_SECONDARY = GPIB_DATA_OUT;
 
-						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+//						console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
+//						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
 
 						if (ADDR_PRIMARY && ADDR_SECONDARY) {
 
-							// SAVE command
-							if ( GPIB_DATA_OUT == 0x61 ) {
+					        // SAVE command (storage)
+						    if ( ADDR_SECONDARY == 0x61 ) {
 
-								console.log("Saving to file: " + this.current_fnumstr);
-/*
-								if( this.sbyteslength > 0 )
-								this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be saved.
-*/
-								saveToTapeReady();
+                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x40)) { 
 
-							} // End if SAVE
+						            console.log("Saving to file: " + current_fnumstr);
+								    storage.saveToTapeReady();
 
+                                } // End if SAVE
 
-							// OLD/APPEND command
-							if( GPIB_DATA_OUT == 0x64 ) {
+							} // End ADDR_TAPE
 
-								console.log("Primary address = " + this.printHex2(ADDR_PRIMARY));
-								console.log("OLD/APPEND command.");
+							// OLD/APPEND command (storage)
+							if ( ADDR_SECONDARY == 0x64 ) {
 
-								if ( ADDR_PRIMARY == 0x41 ) {	// GPIB primary address = MTA1
+							    console.log("Primary address = " + this.printHex2(ADDR_PRIMARY));
+							    console.log("OLD/APPEND command.");
 
-									console.log("Reset index on loaded file.");
+							    if ( ADDR_PRIMARY == 0x41 ) {	// GPIB primary address = MTA1
+
+							        console.log("Reset index on loaded file.");
 									this.programLoaded();
 
 								} // End ADDR_PRIMARY == 0x01
 
-								if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40)) {
-
-									if (this.current_fnumstr) {
-										console.log("Reading file: " + this.current_fnumstr);
-										readFromTape(this.current_fnumstr);
-										if (this.current_fnumstr != '0') this.programLoaded();
-									}
-
-								} // End if ADDR_PRIMARY == (ADDR_TAPE + 0x40)
+                                if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40) ) {
+							        if (current_fnumstr) {
+									    console.log("Reading ASCII file: " + current_fnumstr);
+									    storage.readFromTape(current_fnumstr, 'A');
+									    if (current_fnumstr != '0') this.programLoaded();
+                                    }
+								} // End ADDR_TAPE
 
 							} // End if OLD/APPEND
-
-
-
+/*							
+							// BOLD command (storage)
+							if ( ADDR_SECONDARY == 0x71 ) {
+								if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40) ) {
+							        if (current_fnumstr) {
+									    console.log("Reading BINARY file: " + current_fnumstr);
+//									    storage.readFromTape(current_fnumstr, 'B');
+                                        storage.readBinProg(current_fnumstr);
+									    if (current_fnumstr != '0') this.programLoaded();
+                                    }								
+								} // End  ADDR_TAPE
+								
+							} // End BOLD command
+*/							
 
 						} // ADDR_PRIMARY && ADDR_SECONDARY
 
-
-/*
-						// Look for the GPIB Secondary Address.
-						//
-						if( GPIB_DATA_OUT == 0x64 ) { // 0x64 == 100 == OLD/APPEND command.
-					
-							// State '2' means that the file has been loaded, I have already seen the correct GPIB Primary Address and I
-							// am awaiting the correct GPIB Secondary Address.
-							//
-							if( GPIB_STATE == 2 ) { 
-						
-								GPIB_STATE = 3; // File loaded and seen the correct primary and secondary GPIB addresses.
-							
-								if( this.sbyteslength > 0 )
-								this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be loaded.
-
-							// State '0' means that a file has not been loaded - so I should just ignore the GPIB Secondary Address.
-							//
-							} else if( GPIB_STATE == 0 ) {
-						
-								// Ignore as no file is loaded.
-							
-							// State '1' means that a file has been loaded - but is awaiting the correct GPIB Primary Address
-							// - so I should just ignore the GPIB Secondary Address.
-							//
-							} else if( GPIB_STATE == 1 ) {
-						
-								// Ignore as no correct GPIB Primary Address seen so far.
-							
-							} else if( GPIB_STATE >= 3 ) {
-						
-								GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
-							
-							} // End if GPIB_STATE
-						 
-						} // End if GPIB_DATA_OUT == 0x64
-*/
-
-
 						//console.log( 'PROCESS_GPIB: COMMAND=0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
+
 						if( GPIB_DATA_OUT == 0x6D ) {
 							//
-							if( GPIB_RDTIME_STATE == 1 ) {
+                            if ( ADDR_PRIMARY == 0x42 ) {
+//							if( GPIB_RDTIME_STATE == 1 ) {
 								//
 								var d = new Date();
 								//
@@ -502,48 +482,134 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 						// console.log("Primary and secondary address set.");
 
-						// SAVE command
-						if ( ADDR_SECONDARY == 0x61 ) {
-							if (this.current_fnumstr) {
-								saveToTapeBS(GPIB_DATA_OUT);
-								if (GPIB_EOI_OUT) saveToTapeDone(this.current_fnumstr);
+						// SAVE command (storage)
+						if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x61) ) {
+						    if (current_fnumstr) {
+						        storage.saveToTapeBS(GPIB_DATA_OUT);
+								if (GPIB_EOI_OUT) storage.saveToTapeDone(current_fnumstr, 'A');
 							}
 						}
 
-						// FIND command
-						if ( ADDR_SECONDARY == 0x7B ) {
 
-							//console.log("FIND command detected.");
+                        // PRINT command (storage)
+                        if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6C) ) {
+                            storage.printToFile(GPIB_DATA_OUT);
+                            if (GPIB_DATA_OUT == '0x0D') storage.writeToFileDone();
+                        }
+
+
+                        // WRITE command (storage)
+                        if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6F) ) {
+//console.log(this.printHex2(GPIB_DATA_OUT));
+//console.log("Writing...");
+                            storage.writeToFile(GPIB_DATA_OUT);
+                            if (bin_byte_cnt == 0) {
+                                bin_data_type = GPIB_DATA_OUT >> 4;
+                                bin_data_length = (GPIB_DATA_OUT & 0x0F) * 256;
+                            }
+//console.log("Data len1: " + bin_data_length);
+                            if (bin_byte_cnt == 1) {
+                                bin_data_length = bin_data_length + GPIB_DATA_OUT;
+                                if (bin_data_type == 4) bin_data_length++;  // Text data has one extra byte?
+                            }
+//console.log("Data len2: " + bin_data_length);
+                            bin_byte_cnt++;
+                            if (bin_byte_cnt == bin_data_length+2) {
+                                bin_byte_cnt = 0;
+                                bin_data_length = 0;
+                                bin_data_type = 0;
+                                storage.writeToFileDone();
+//console.log("Write complete.");
+                            }
+                        }
+
+						// BSAVE command (storage)
+						if ( ADDR_SECONDARY == 0x71 ) {
+                            if ( ADDR_PRIMARY == (ADDR_TAPE + 0x20) ) {
+						        if (current_fnumstr) {
+						            storage.saveToTapeBin(GPIB_DATA_OUT);
+								    if (GPIB_EOI_OUT) storage.saveToTapeDone(current_fnumstr, 'B');
+							    }
+                            }
+						}
+
+				        // FIND command (storage)
+						if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x7B) ) {
 
 							// Preceding space singals new file number
-							if (GPIB_DATA_OUT == 0x20) this.current_fnumstr = "";
+							if (GPIB_DATA_OUT == 0x20) current_fnumstr = "";
+
+                            // CR signals end of data
+                            if (GPIB_DATA_OUT == 0x0D) {
+                                storage.findFile(current_fnumstr);
+//                                console.log("Set file number to: " + current_fnumstr);
+                            }
 
 							// Add numeric digits to file number string
 							if (GPIB_DATA_OUT > 0x29 && GPIB_DATA_OUT < 0x3A) {
- 								this.current_fnumstr += String.fromCharCode(GPIB_DATA_OUT);
-								console.log("Set file number to: " + this.current_fnumstr);
+ 							    current_fnumstr += String.fromCharCode(GPIB_DATA_OUT);
+                                // Clear file counters
+                                bin_byte_cnt = 0;
+                                bin_data_len = 0;
 							}						
-						}
+						}   // END of FIND command
 
-					}
+					} // END of ADDR_PRIMARY && ADDR_SECONDARY
 
-				} // End GPIB_ATN_OUT = 0
+				} // End of GPIB_ATN_OUT = 0
 
 
 			} // End GPIB_DAV_OUT / GPIB_NDAC_IN (outbound data to process).
 
 			GPIB_NDAC_IN = GPIB_DAV_OUT ^ 0x01; // Invert before return.				
 		
-		} // End if GPIB_TALK.
+		} // End of GPIB_TALK.
 		
 
 		if( GPIB_LISTEN ) {
-		
+
 			// TODO:
-			
-		} // End if GPIB_LISTEN.
+
+            if( GPIB_ATN_OUT == 0 ) {
+
+                if ( ADDR_PRIMARY && ADDR_SECONDARY) {
+
+                    // INPUT command (storage)
+                    if ( ADDR_SECONDARY == 0x6D ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 5; // Signal we are ready to read ASCII DAA
+                        }
+
+                    } // End of INPUT command
+
+
+                    // READ command (storage)
+                    if ( ADDR_SECONDARY == 0x6E ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 6; // Signal we are ready to read BINARY data
+                        }
+
+                    } // End of READ command
+
+                    // BOLD command (storage)
+                    if ( ADDR_SECONDARY == 0x71 ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 7; // Signal we are ready to read BINARY PROGRAM
+                        }
+
+                    } // End of BOLD command
+
+                } // End of ADDR_PRIMARY && ADDR_SECONDARY
+
+            } // End of GPIB_ATN_OUT = 0
+
+		} // End of GPIB_LISTEN.
 		
-		
+//		GPIB_NDAC_IN = GPIB_DAV_OUT ^ 0x01; // Invert before return.
+
     } // End of function PROCESS_GPIB.
 
     // *******************
@@ -556,6 +622,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
     
 		if( GPIB_LISTEN ) {
 		
+            // Read a program into emulator memory
 			if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 3) ) {
 			
 				// Are there any (more) characters to send?
@@ -605,6 +672,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				
 				} // End if any more character to send of the program.
 
+            // Read in date and time
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_RDTIME_STATE == 2) ) {
 
 				// Send a data byte to the 4015.
@@ -628,6 +696,86 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
 				
+            // Read ASCII data from storage
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 5) ) {
+
+				// Send a data byte to the 4015.
+				//
+				GPIB_DATA_IN = storage.inputFromFile();
+					
+				// Is this the 'last' character?
+                if (GPIB_DATA_IN == 0x0D) GPIB_EOI_IN = 1;
+				else                                GPIB_EOI_IN = 0;
+					
+				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+            // Read BINARY data from storage
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 6) ) {
+
+				// Send a data byte to the 4015.
+				//
+				GPIB_DATA_IN = storage.readFromFile();
+
+//console.log(this.printHex2(GPIB_DATA_IN));
+
+                if (bin_byte_cnt == 0) {
+                    bin_data_type = GPIB_DATA_IN >> 4;
+                    bin_data_length = (GPIB_DATA_OUT & 0x0F) * 256;
+                }
+//console.log("Data len1: " + bin_data_length);
+                if (bin_byte_cnt == 1) {
+                    bin_data_length = bin_data_length + GPIB_DATA_OUT;
+                    if (bin_data_type == 4) bin_data_length++;  // Text data has one extra byte?
+                }
+//console.log("Data len2: " + bin_data_length);
+                bin_byte_cnt++;
+                if (bin_byte_cnt == bin_data_length+2) {
+                    bin_byte_cnt = 0;
+                    bin_data_length = 0;
+                    bin_data_type = 0;
+                    GPIB_EOI_IN = 1;
+
+//console.log("Write complete.");
+                }else{
+                    GPIB_EOI_IN = 0;
+                }
+
+				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
+
+
+            // Read BINARY PROGRAM from storage
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 7) ) {
+
+				// Send a data byte to the 4015.
+				//
+                var value = storage.readBinProg() & 0xFF;
+
+                if (value == -1) {
+                    GPIB_EOI_IN = 1;   // Error - singal EOI to terminate
+                }else{
+                    GPIB_DATA_IN = value & 0xFF;
+                    GPIB_EOI_IN = value & 0x0100;
+//console.log(this.printHex2(GPIB_DATA_IN));
+                }
+					
+				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 3;
+
+                // Possibly GPIB_STATE = 3 - program loaded
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
 			} else if( (GPIB_NDAC_OUT == 1) && (GPIB_DAV_IN == 1) ) {
 
 				GPIB_DAV_IN = 0; // Clear the data available flag.
@@ -884,27 +1032,70 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 		
 		// Is this a read from ROM?
 		} else if( (address >= 0x8000) && (address <= 0xFFFF) ) {
-		    
+           		    
 		    // Check for bank switching being enabled...
-			if( (address >= 0x8800) && (address < 0xA800) && (this.BANK_SWITCH_SELECTOR > 0) ) {
-			
+			if( (address >= 0x8800) && (address < 0xA800) && (BANK_SWITCH_SELECTOR > 0) ) {
+//console.log("Addr: " +  this.printHex4(address), "Bank switch enabled.");
+                // BANK SWITCH ENABLED and not the default 4051 ROM set.
+                switch(BANK_SWITCH_SELECTOR) {
+                    case 1 :
+                        // Overflow ROM U101/U1 (747)
+                        if( (address >= 0x8800) && (address < 0x9000) ) return rom.ROM747[ address - 0x8800 ];
+                        // Overflow ROM U201/U11 (748)
+                        if( (address >= 0x9000) && (address < 0x9800) ) return rom.ROM748[ address - 0x9000 ];
+                        break;
+                    case 2 :
+                        // Ignore
+                        break;
+                    case 3 :
+                        // Ignore
+                        break;
+                    case 4 :
+                        // Rom Backpack Left Slot
+                        if( (address >= 0x8800) && (address < 0xA800) ) return rom.DERROML[ address - 0x8800 ];
+                        break;
+                    case 5 :
+                        // ROM Backpack Right Slot
+                        if( (address >= 0x8800) && (address < 0xA800) ) return rom.DERROMR[ address - 0x8800 ];
+                        break;
+                    case 6 :
+                        // 4051 ROM Expander Left Bank
+//console.log("Addr: " +  this.printHex4(address), "Bank switch: " + BANK_SWITCH_SELECTOR, "BSXaddr: " + BSX_ADDRESS);
+                        if( (address >= 0x8800) && (address < 0xA800) ) return romexp.RomExpLeftBank(address, BSX_ADDRESS);
+                        break;
+                    case 7 :
+                        // 4051 ROM Expander Right Bank
+//console.log("Addr: " +  this.printHex4(address), "Bank switch: " + BANK_SWITCH_SELECTOR, "BSXaddr: " + BSX_ADDRESS);
+                        if( (address >= 0x8800) && (address < 0xA800) ) return romexp.RomExpRightBank(address, BSX_ADDRESS);
+                        break;
+                    default :
+                        // Unknown bank switch mapping.
+                        return 0x00;
+                }
+
+
+	
 				// BANK SWITCH ENABLED and not the default 4051 ROM set.
-				
-				if( (address >= 0x8800) && (address < 0x9000) && (this.BANK_SWITCH_SELECTOR == 1) ) {
-				
+/*				
+				if( (address >= 0x8800) && (address < 0x9000) && (BANK_SWITCH_SELECTOR == 1) ) {
+console.log("Addr: " + this.printHex4(address), "Bank switch = " + 1);				
 					// U101/U1 (747)
 					return rom.ROM747[ address - 0x8800 ];
 					
-				} else if( (address >= 0x9000) && (address < 0x9800) && (this.BANK_SWITCH_SELECTOR == 1) ) {
+				} else if( (address >= 0x9000) && (address < 0x9800) && (BANK_SWITCH_SELECTOR == 1) ) {
+console.log("Addr: " + this.printHex4(address), "Bank switch = " + 1);
 					// U201/U11 (748)
 					return rom.ROM748[ address - 0x9000 ];
-				} else if( (address >= 0x8800) && (address < 0x9000) && (this.BANK_SWITCH_SELECTOR == 4) ) {
+				} else if( (address >= 0x8800) && (address < 0xA800) && (BANK_SWITCH_SELECTOR == 4) ) {
+console.log("Addr: " + this.printHex4(address), "Bank switch = " + 4);
 					// My ROM BS(L).
 					return rom.DERROM[ address - 0x8800 ];
 				} else {
+console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 					// Unknown bank switch mapping.
 					return 0x00;
 				}
+*/
 			} 
 			else {
 				return rom.ROM[ address - 0x8000 ];
@@ -1133,7 +1324,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				// ***  BANK SWITCH SELECTOR  ***
 				// ******************************
 
-				case 0x87C0 :	this.BANK_SWITCH_SELECTOR = (value >>> 3) & 0x07; 
+				case 0x87C0 :   BSX_ADDRESS = value & 0x07;	
+                                BANK_SWITCH_SELECTOR = (value >>> 3) & 0x07; 
 								break;
 							
 				// **************

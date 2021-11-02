@@ -22,22 +22,22 @@
     <div id="storage" hidden="true">
         <p><b>File information:</b></p>
         <div id="fileInfoCtrls">
-            Select: <select id="fileList" class="storestyle1" onchange="loadFile();"></select>&emsp;
-            Type: <select id="fileType" class="storestyle1" onchange="changeType();">
+            Select: <select id="fileList" class="storestyle1" onchange="storage.loadFile();"></select>&emsp;
+            Type: <select id="fileType" class="storestyle1" onchange="storage.changeType();">
                     <option value="">None</option>
                     <option value="A">Ascii</option>
                     <option value="B">Binary</option>
                     <option value="N">New</option>
                     <option value="L">Last</option>
                 </select>&emsp;
-            Usage: <select id="fileUsage" class="storestyle1" onchange="changeUsage();">
+            Usage: <select id="fileUsage" class="storestyle1" onchange="storage.changeUsage();">
                     <option value="">None</option>
                     <option value="P">Program</option>
                     <option value="D">Data</option>
                     <option value="L">Log</option>
                     <option value="T">Text</option>
                   </select>&emsp;
-            Secret: <select id="fileSecret" class="storestyle1" onClick="toggleSecret();">
+            Secret: <select id="fileSecret" class="storestyle1" onClick="storage.toggleSecret();">
                         <option value="N">N</option>
                         <option value="Y">Y</option>
                     </select>&emsp;
@@ -47,16 +47,16 @@
         <div id="fileWindow">
             <p><b>File content viewer:</b>&emsp;[<SPAN id="fname">Drop a file to this window</SPAN>]</p>
             <p>
-            <textarea id="fileViewer" rows="25" cols="74" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);"></textarea><BR>
+            <textarea id="fileViewer" rows="25" cols="74" ondrop="storage.dropHandler(event);" ondragover="storage.dragOverHandler(event);" readonly></textarea><BR>
             </p>
         </div>
 
         <div id="storebtns1">
-            <input type="button" class="storebtn" value="Save" onClick="saveFile();"></input>
-            <input type="button" class="storebtn" value="Load" onClick="loadFile();"></input>
-            <input type="button" class="storebtn" value="Delete" onClick="deleteFile();"></input>
-            <input type="button" class="storebtn" value="Clear" onClick="clearFile();"></input>
-            <input type="button" class="storebtn" value="ClrALL" onClick="clearAll();"></input>
+            <input type="button" class="storebtn" value="Save" onClick="storage.saveFile();"></input>
+            <input type="button" class="storebtn" value="Load" onClick="storage.loadFile();"></input>
+            <input type="button" class="storebtn" value="Delete" onClick="storage.deleteFile();"></input>
+            <input type="button" class="storebtn" value="Clear" onClick="storage.clearFile();"></input>
+            <input type="button" class="storebtn" value="ClrALL" onClick="storage.clearAll();"></input>
         </div>
 
         <div id="savefnum">
@@ -65,13 +65,13 @@
         </div>
 
         <div id="storebtns3">
-            <input type="button" class="storebtn" value="Select" onClick="selectFile();"></input>
-            <input type="button" class="storebtn" value="Cancel" onClick="closeStorage();"></input>
+            <input type="button" class="storebtn" value="Select" onClick="storage.selectTekFile();"></input>
+            <input type="button" class="storebtn" value="Cancel" onClick="storage.closeStorage();"></input>
         </div>
 
         <div id="importCtrls">
-            <input type="button" class="storebtn" value="Export" onClick="storageAdm(0);"></input>
-            <input type="button" class="storebtn" value="Import" onClick="storageAdm(1);"></input>
+            <input type="button" class="storebtn" value="Export" onClick="storage.storageAdm(0);"></input>
+            <input type="button" class="storebtn" value="Import" onClick="storage.storageAdm(1);"></input>
             <input type="file" id="importObj" onchange="importObject();" hidden="true"></input>
             <select id="importType" class="storestyle1">
 	            <option>Single file</option>
@@ -208,11 +208,11 @@
                 <input id="start" class="mainbtn" value="▶ start" onclick="javascript:tek_start();" type="button">
                 <input id="stop"  class="mainbtn" value="▣ pause" disabled="true" onclick="javascript:tek_stop();" type="button">
                 <input id="reset" class="mainbtn" value="⎌ reset" onclick="javascript:tek_reset();" type="button">
-                <input id="mutespkr" class="mainbtn" value="✘ mute" onClick="toggleAudioStatus();" type="button" >
-                <input id="storeopts" class="mainbtn" value="⎘ storage" disabled="true" onClick="showStorageOptions();" type="button" >
+                <input id="mutespkr" class="mainbtn" value="♫ mute" onClick="toggleAudioStatus();" type="button" >
+                <input id="storeopts" class="mainbtn" value="⎘ storage" disabled="true" onClick="storage.showStorageOptions();" type="button" >
             </td>
 
-		    </tr></table>
+          </tr></table>
         </div>
 
     </div>
@@ -222,6 +222,7 @@
 <script language="JavaScript">
 
 var tek;
+var storage = new Storage();
 var audioOn = true;
 
 
@@ -459,9 +460,9 @@ function toggleAudioStatus(){
     mutebtn = document.getElementById('mutespkr');
 	audioOn = !audioOn;
     if (audioOn) {
-        mutebtn.value = "✘ mute";        
+        mutebtn.value = "♫ mute";        
     }else{
-        mutebtn.value = "✔ mute";        
+        mutebtn.value = "‼ mute";        
     }
 }
 
