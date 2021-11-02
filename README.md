@@ -20,7 +20,7 @@ Update 01 Nov 2021:
 
   - implemented ROM backpack right slot
 
-  Known issues:
+  &nbsp;&nbsp;Known issues:
 
   - export to 4924 Emulator directory does not export all files. It will, however, export up to around 10 files at a time.
 
