@@ -12,6 +12,8 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 Update 02 Nov 2021:
 
+  - the display has been updated by Monty McGraw to enable refresh graphics
+
   - implemented additional commands to read/write from web storage: PRINT, INPUT, WRITE, READ, BSAVE, BOLD
 
   - implemented ROM Expander (4051E01)
@@ -49,7 +51,7 @@ Previous:
 
 Update 02 Nov 2021
 
-  - display updated to enable refresh graphics
+  - the display has been updated to enable refresh graphics
 
 Previous:
 
