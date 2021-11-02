@@ -10,9 +10,7 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 <B>Updates by Twilight Logic</B>
 
-Update 01 Nov 2021:
-
-  - the display has been updated by Monty McGraw to enable refresh graphics
+Update 02 Nov 2021:
 
   - implemented additional commands to read/write from web storage: PRINT, INPUT, WRITE, READ, BSAVE, BOLD
 
@@ -49,7 +47,7 @@ Previous:
 
 <B>Additions by Monty McGraw:</B>
 
-01 Nov 2021
+Update 02 Nov 2021
 
   - display updated to enable refresh graphics
 
