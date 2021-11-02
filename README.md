@@ -42,7 +42,7 @@ Previous:
 
   - added local storage features to enable programs to be stored in the browser and accessed like an external tape drive
 
---
+---
 
 <B>Additions by Monty McGraw:</B>
 
@@ -54,16 +54,16 @@ Previous:
 
  - Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
 
---
+---
 
 I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file      AND the 4051, 4052, 4052A and 4054A computers.
 
---
+---
 
 For the older programs from the Programs directory, and my older programs on the 4050 Program repository that have Character, backspace, underline - execute the older HTML file
 
 
---
+---
 
 Detailed description by Dave R.:
 
