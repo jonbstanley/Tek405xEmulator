@@ -10,6 +10,15 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 <B>Updates by Twilight Logic</B>
 
+Update 04 Nov 2021:
+
+  - fixed some bugs reported by Monty McGraw including:
+    - unclear functions of buttons: ClrALL renamed to DellALL. Delete renamed to DelFile. order of buttons changed to reflect a more logical grouping.
+    - ClrALL (now DelALL) failed to delete the repository
+    - import 4924 directory did not work
+    - Clear did not clear file number or parameters to defaults
+
+
 Update 02 Nov 2021:
 
   - the display has been updated by Monty McGraw to enable refresh graphics

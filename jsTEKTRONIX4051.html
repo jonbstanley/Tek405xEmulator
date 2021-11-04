@@ -47,16 +47,16 @@
         <div id="fileWindow">
             <p><b>File content viewer:</b>&emsp;[<SPAN id="fname">Drop a file to this window</SPAN>]</p>
             <p>
-            <textarea id="fileViewer" rows="25" cols="74" ondrop="storage.dropHandler(event);" ondragover="storage.dragOverHandler(event);" readonly></textarea><BR>
+            <textarea id="fileViewer" rows="25" cols="74" ondrop="storage.dropHandler(event, storage);" ondragover="storage.dragOverHandler(event);" readonly></textarea><BR>
             </p>
         </div>
 
         <div id="storebtns1">
             <input type="button" class="storebtn" value="Save" onClick="storage.saveFile();"></input>
             <input type="button" class="storebtn" value="Load" onClick="storage.loadFile();"></input>
-            <input type="button" class="storebtn" value="Delete" onClick="storage.deleteFile();"></input>
-            <input type="button" class="storebtn" value="Clear" onClick="storage.clearFile();"></input>
-            <input type="button" class="storebtn" value="ClrALL" onClick="storage.clearAll();"></input>
+            <input type="button" class="storebtn" value="Clear" onClick="storage.clearView();"></input>
+            <input type="button" class="storebtn" value="DelFile" onClick="storage.deleteFile();"></input>
+            <input type="button" class="storebtn" value="DelALL" onClick="storage.clearAll();"></input>
         </div>
 
         <div id="savefnum">
@@ -72,7 +72,7 @@
         <div id="importCtrls">
             <input type="button" class="storebtn" value="Export" onClick="storage.storageAdm(0);"></input>
             <input type="button" class="storebtn" value="Import" onClick="storage.storageAdm(1);"></input>
-            <input type="file" id="importObj" onchange="importObject();" hidden="true"></input>
+            <input type="file" id="importObj" onchange="importObject(storage);" hidden="true"></input>
             <select id="importType" class="storestyle1">
 	            <option>Single file</option>
                 <option>Storage Archive</option>

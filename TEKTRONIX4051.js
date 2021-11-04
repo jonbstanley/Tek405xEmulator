@@ -374,8 +374,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 						ADDR_SECONDARY = GPIB_DATA_OUT;
 
-//						console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
-//						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+						console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
+						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
 
 						if (ADDR_PRIMARY && ADDR_SECONDARY) {
 
