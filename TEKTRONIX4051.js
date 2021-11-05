@@ -382,7 +382,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 					        // SAVE command (storage)
 						    if ( ADDR_SECONDARY == 0x61 ) {
 
-                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x40)) { 
+                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) { 
 
 						            console.log("Saving to file: " + current_fnumstr);
 								    storage.saveToTapeReady();

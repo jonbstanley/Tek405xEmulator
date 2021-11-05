@@ -357,7 +357,7 @@ function Storage() {
             }   
         } else if (idx == 2) {
             if (inbound) {
-//              console.log("Import 4924 emulator directory...");
+//              console.log("Import 4050 Tape Emulator files...");
 	            if (confirm("WARNING: This will overwite all current files!")) {
                     var multifile = document.getElementById('importObj');
                     multifile.setAttribute('multiple','true');
@@ -366,7 +366,7 @@ function Storage() {
                     return;
                 }
             }else{
-                console.log("Export 4924 emulator directory...");
+//                console.log("Export 4050 Tape Emulator files...");
                 export4924();
             }   
 	    } else {
@@ -390,39 +390,18 @@ function Storage() {
 
 
     function exportFile(filename, contentType) {
-        // Mode: false = single file; true = multiple files;
-//    console.log("Started export of file: " + filename);
-        const exported = document.createElement('a');
         const file = new Blob([content], {type: contentType});
-        exported.href = URL.createObjectURL(file);
-        exported.download = filename;
-        exported.click();
-
-        URL.revokeObjectURL(exported.href);
-        exported.remove();
-//    console.log("Done export of file: " + filename);
+        performExport(filename, file);
     }
-
-function exportedEnd() {
-    console.log("Download complete.");
-    URL.revokeObjectURL(exported.href);
-    exported.remove();
-}
 
 
     function archiveStorage(filename, contentType) {
         var content = JSON.stringify(localStorage);
-        const exported = document.createElement('a');
-        const file = new Blob([content], {type: contentType});
-  
-        exported.href = URL.createObjectURL(file);
-        exported.download = filename;
-        exported.click();
-        URL.revokeObjectURL(exported.href);
-        exported.remove();
+        const filedata = new Blob([content], {type: contentType});
+        performExport(filename, filedata);
     }
 
-
+/*
     function export4924(){
         var filelistobj = document.getElementById('fileList');
         var fnumstr = "";
@@ -445,6 +424,50 @@ function exportedEnd() {
                 }
             }
         }
+    }
+*/
+
+    function export4924(){
+        var filelistobj = document.getElementById('fileList');
+        var fnumstr = "";
+        var idx = 0;
+        var filename;
+        var filedata;
+        var zip = new JSZip();
+        if (filelistobj && filelistobj.length>0) {
+
+            for(var i=0; i<filelistobj.length; i++){
+                fnumstr = filelistobj[i].text;
+                filename = "";
+                if (fnumstr != "IDX") {
+                    content = [];
+                    // var filedata = atob(localStorage.getItem(idx));
+                    filedata = localStorage.getItem(fnumstr);
+                    content = str2uint8Array(filedata);
+                    idx = findFileRecord(fnumstr);
+                    if (idx>-1) filename = getFilename(fnumstr);
+                    if (filename === "") filename = "File-" + fnumstr + ".tek";
+
+                    zip.file(filename, content);
+
+                }
+            }
+
+            zip.generateAsync({type:"blob"}).then(function(zipcontent) {
+                performExport("4050files.zip", zipcontent);
+            });
+
+        }
+    }
+
+
+    function performExport(filename, filecontent) {
+        const exported = document.createElement('a');
+        exported.href = URL.createObjectURL(filecontent);
+        exported.download = filename;
+        exported.click();
+        URL.revokeObjectURL(exported.href);
+        exported.remove();
     }
 
 
@@ -506,10 +529,11 @@ function exportedEnd() {
 
 
     this.saveToTapeReady = function(){
+console.log("Ready to save file...");
 	    var filecontent = document.getElementById('fileViewer');
 	    filecontent.value = "";
         content = new Uint8ClampedArray();
-        bindata = []
+        bindata = [];
     }
 
 

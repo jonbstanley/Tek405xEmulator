@@ -8,51 +8,7 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 ---
 
-<B>Updates by Twilight Logic</B>
-
-Update 04 Nov 2021:
-
-  - fixed some bugs reported by Monty McGraw including:
-    - unclear functions of buttons: ClrALL renamed to DellALL. Delete renamed to DelFile. order of buttons changed to reflect a more logical grouping.
-    - ClrALL (now DelALL) failed to delete the repository
-    - import 4924 directory did not work
-    - Clear did not clear file number or parameters to defaults
-
-
-Update 02 Nov 2021:
-
-  - the display has been updated by Monty McGraw to enable refresh graphics
-
-  - implemented additional commands to read/write from web storage: PRINT, INPUT, WRITE, READ, BSAVE, BOLD
-
-  - implemented ROM Expander (4051E01)
-
-  - implemented ROM backpack right slot
-
-  &nbsp;&nbsp;&nbsp;Known issues:
-
-  - export to 4924 Emulator directory does not export all files. It will, however, export up to around 10 files at a time.
-
-
-Update 16 Oct 2021:
-
-  - implemented Dave R's fix for the random number generator
-
-
-Update 15 Oct 2021:
-
-  - added feature to allow import/export of files between the JavaScript emulator and Monty's Arduino 4924 emulator
-
-  - added feature to allow the entire storage to be archived/imported as a single "tape" file archive"
-
-  - updated Keyboard.js and re-mapped keyboard to use standard PC keys
-
-
-Previous:
-
-  - added feature to drag and drop files on to the storage window
-
-  - added local storage features to enable programs to be stored in the browser and accessed like an external tape drive
+For details of releases and what is new see Releases.md.
 
 ---
 
