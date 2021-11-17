@@ -10,7 +10,10 @@ function Storage() {
     var bindata = [];
     var binDataPtr = 0;
     var currentfile = "";
-
+    var copylen = 256;
+    var copyterm = 0x80;
+    var copycnt = 0;
+    
     const fileTypes = [
 	    {idx:'A',type:'ASCII'},
 	    {idx:'B',type:'BINARY'},
@@ -260,7 +263,7 @@ function Storage() {
                             filelistobj.selectedIndex = i;
                         }
                     }
-                    console.log("File to display: " + fnumobj.value);
+//                    console.log("File to display: " + fnumobj.value);
                     displayInViewer();
                     updateFileInfoCtrls(fnumobj.value);
                 }
@@ -536,7 +539,7 @@ console.log("Ready to save file...");
         bindata = [];
     }
 
-
+// Obsoleted
     this.saveToTapeBU = function(pchar) {
 	    var progobj = document.getElementById('fileViewer');
 	    if (pchar == 0x0D) {
@@ -552,8 +555,9 @@ console.log("Ready to save file...");
             bindata.push(pchar);
 	    }
     }
+// Obsoleted
 
-
+// Obsoleted
     this.saveToTapeBS = function(pchar) {
     //	var progobj = document.getElementById('fileViewer');
 	    //console.log(String.fromCharCode(pchar));
@@ -569,6 +573,7 @@ console.log("Ready to save file...");
             bindata.push(pchar);
 	    }
     }
+// Obsoleted
 
 
     this.saveToTapeBin = function(pchar) {
@@ -656,7 +661,7 @@ console.log("Ready to save file...");
     }
 
 
-    // Input data from ASCII file
+    // INPUT data from ASCII file
     this.inputFromFile = function(){
         var idx = findFileRecord(currentfile);
         var ftype = fileIndex[idx][1];
@@ -673,7 +678,46 @@ console.log("Ready to save file...");
     }
 
 
-    // Read data from BINARY file
+    // COPY data from drawing file
+    this.copyFromFile = function(){
+        var idx = findFileRecord(currentfile);
+        var ftype = fileIndex[idx][1];
+        // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
+        // This will make a NEW or unassigned file ASCII DATA
+        if (ftype == 'A') {
+            var byteval;
+            if ( (binDataPtr < bindata.length) ){
+                byteval = bindata[binDataPtr];
+                if ( (byteval == copyterm) || (byteval == 0x0D) ) copycnt = copylen;
+                if (binDataPtr == bindata.length) byteval = 0x01FF;    // End of file
+console.log("Copycnt: " + copycnt);
+/*
+                if (copycnt == copylen-1){    // Copy length reached
+                    byteval = byteval0x1;
+                    binDataPtr--;
+                    copycnt = 0;
+                }else{
+                    copycnt++;
+                }
+*/
+                if (copycnt == copylen) {
+                    byteval = 0x1FF;
+                    copycnt = 0;
+                }else{
+                    copycnt++;
+                }
+console.log("Byte: " + (byteval & 0xFF));
+console.log("EOI: " + (byteval >> 8));
+                binDataPtr++;
+                return byteval;
+            }
+        }
+        return 0x1FF;
+    }
+
+
+
+    // READ data from BINARY file
     this.readFromFile = function(){
         var idx = findFileRecord(currentfile);
 //console.log("Current filenum: " + currentfile);
@@ -693,6 +737,9 @@ console.log("Ready to save file...");
     }
 
 
+
+
+/*
     // Read data from BINARY PROG file
     this.readBinProg = function(){
         var idx = findFileRecord(currentfile);
@@ -714,6 +761,27 @@ console.log("Ready to save file...");
         }
         return -1;
     }
+*/
+
+    // Read data from BINARY PROG file
+    this.readBinProg = function(){
+        var idx = findFileRecord(currentfile);
+        if (idx >= 0) {
+            var ftype = fileIndex[idx][1];
+            var fusage = fileIndex[idx][2];
+            // Read only from BINARY PROGRAM file
+            if ( (ftype == 'B') && (fusage == 'P') ) {
+                var dataval;
+                if (binDataPtr < bindata.length) dataval = bindata[binDataPtr];
+                if (binDataPtr == bindata.length) dataval = 0x01FF; 
+                binDataPtr++;
+                return dataval;
+            }
+        }
+        return 0x01FF;
+    }
+
+
 
 
     // FIND command - select the requested file
@@ -721,6 +789,7 @@ console.log("Ready to save file...");
 //console.log("4051 requested file: " + fnumstr);
         if (parseInt(fnumstr) > 0 && parseInt(fnumstr) < 255) {
             binDataPtr = 0;
+            copycnt = 0;
             selectCurrentFile(fnumstr);
 //            updateFileList(fnumstr);
             if (content && content.length > 0) {

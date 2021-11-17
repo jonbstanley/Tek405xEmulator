@@ -485,7 +485,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 						// SAVE command (storage)
 						if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x61) ) {
 						    if (current_fnumstr) {
-						        storage.saveToTapeBS(GPIB_DATA_OUT);
+						        storage.saveToTapeBin(GPIB_DATA_OUT);
 								if (GPIB_EOI_OUT) storage.saveToTapeDone(current_fnumstr, 'A');
 							}
 						}
@@ -504,8 +504,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 //console.log("Writing...");
                             storage.writeToFile(GPIB_DATA_OUT);
                             if (bin_byte_cnt == 0) {
-                                bin_data_type = GPIB_DATA_OUT >> 4;
-                                bin_data_length = (GPIB_DATA_OUT & 0x0F) * 256;
+                                bin_data_type = ((GPIB_DATA_OUT&0xE0)>>5) + 2;
+                                bin_data_length = (GPIB_DATA_OUT&0x1F)*256;
                             }
 //console.log("Data len1: " + bin_data_length);
                             if (bin_byte_cnt == 1) {
@@ -575,7 +575,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                 if ( ADDR_PRIMARY && ADDR_SECONDARY) {
 
                     // INPUT command (storage)
-                    if ( ADDR_SECONDARY == 0x6D ) {
+                    if ( (ADDR_SECONDARY == 0x6A ) || (ADDR_SECONDARY == 0x6D) ) {
+//                    if (ADDR_SECONDARY == 0x6D ) {
 
                         if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
                             GPIB_STATE = 5; // Signal we are ready to read ASCII DAA
@@ -672,6 +673,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				
 				} // End if any more character to send of the program.
 
+
             // Read in date and time
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_RDTIME_STATE == 2) ) {
 
@@ -695,17 +697,31 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				if( GPIB_EOI_IN == 1 ) GPIB_RDTIME_STATE = 0;
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
-				
-            // Read ASCII data from storage
+
+
+            // Read ASCII data from storage (INPUT)
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 5) ) {
 
 				// Send a data byte to the 4015.
 				//
-				GPIB_DATA_IN = storage.inputFromFile();
-					
-				// Is this the 'last' character?
-                if (GPIB_DATA_IN == 0x0D) GPIB_EOI_IN = 1;
-				else                                GPIB_EOI_IN = 0;
+//console.log("INPUT sec address: " + this.printHex2(ADDR_SECONDARY));
+				if (ADDR_SECONDARY == 0x6A) {
+                    var value = storage.copyFromFile();
+                    GPIB_DATA_IN = value & 0xFF;
+                    GPIB_EOI_IN = (value & 0x0100) >> 8;
+//console.log("Data: " + this.printHex2(GPIB_DATA_IN));
+console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
+			        // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x80) GPIB_EOI_IN = 1;
+				    else                                GPIB_EOI_IN = 0;
+                }
+
+				if (ADDR_SECONDARY == 0x6D) {
+                    GPIB_DATA_IN = storage.inputFromFile();
+				    // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x0D) GPIB_EOI_IN = 1;
+				    else                                GPIB_EOI_IN = 0;
+                }
 					
 				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
 					
@@ -713,25 +729,26 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
 
-            // Read BINARY data from storage
+
+            // Read BINARY data from storage (READ)
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 6) ) {
 
-				// Send a data byte to the 4015.
+				// Send a data byte to the 4051.
 				//
 				GPIB_DATA_IN = storage.readFromFile();
 
 //console.log(this.printHex2(GPIB_DATA_IN));
 
                 if (bin_byte_cnt == 0) {
-                    bin_data_type = GPIB_DATA_IN >> 4;
-                    bin_data_length = (GPIB_DATA_OUT & 0x0F) * 256;
+                    bin_data_type = ((GPIB_DATA_IN&0xE0)>>5)+2;
+                    bin_data_length = (GPIB_DATA_IN&0x1F)*256;
                 }
 //console.log("Data len1: " + bin_data_length);
                 if (bin_byte_cnt == 1) {
-                    bin_data_length = bin_data_length + GPIB_DATA_OUT;
+                    bin_data_length = bin_data_length + GPIB_DATA_IN;
                     if (bin_data_type == 4) bin_data_length++;  // Text data has one extra byte?
-                }
 //console.log("Data len2: " + bin_data_length);
+                }
                 bin_byte_cnt++;
                 if (bin_byte_cnt == bin_data_length+2) {
                     bin_byte_cnt = 0;
@@ -749,8 +766,6 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
-
-
 
 
             // Read BINARY PROGRAM from storage
