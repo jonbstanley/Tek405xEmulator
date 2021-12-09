@@ -110,7 +110,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
     
     var GPIB_REN_OUT  = 0; // Remote Enable. [CONTROLLER].
     
-    this.sbytes = []; // An empty array initially.
+    this.exesbytes = []; // An empty array initially.
     this.sbyteslength = 0; // Initially no bytes stored in the empty array!
     this.sbytesindex = -1; // Initially no program has been stored.
     
@@ -568,8 +568,6 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 		if( GPIB_LISTEN ) {
 
-			// TODO:
-
             if( GPIB_ATN_OUT == 0 ) {
 
                 if ( ADDR_PRIMARY && ADDR_SECONDARY) {
@@ -599,6 +597,15 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
                         if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
                             GPIB_STATE = 7; // Signal we are ready to read BINARY PROGRAM
+                        }
+
+                    } // End of BOLD command
+
+                    // DIR/TLIST command (storage)
+                    if ( ADDR_SECONDARY == 0x73 ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 8; // Signal we are ready to get the next directory entry
                         }
 
                     } // End of BOLD command
@@ -710,7 +717,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                     GPIB_DATA_IN = value & 0xFF;
                     GPIB_EOI_IN = (value & 0x0100) >> 8;
 //console.log("Data: " + this.printHex2(GPIB_DATA_IN));
-console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
+//console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
 			        // Is this the 'last' character?
                     if (GPIB_DATA_IN == 0x80) GPIB_EOI_IN = 1;
 				    else                                GPIB_EOI_IN = 0;
@@ -776,7 +783,7 @@ console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
                 var value = storage.readBinProg() & 0xFF;
 
                 if (value == -1) {
-                    GPIB_EOI_IN = 1;   // Error - singal EOI to terminate
+                    GPIB_EOI_IN = 1;   // Error - signal EOI to terminate
                 }else{
                     GPIB_DATA_IN = value & 0xFF;
                     GPIB_EOI_IN = value & 0x0100;
@@ -790,6 +797,23 @@ console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
                 // Possibly GPIB_STATE = 3 - program loaded
 				GPIB_DAV_IN = 1; // Signify that you have new data.
 
+
+            // Read next directory entry (TLIST) from storage (via INPUT @5,19)
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 8) ) {
+
+				if (ADDR_SECONDARY == 0x73) {
+                    GPIB_DATA_IN = storage.getDirEntry();
+//console.log(this.printHex2(GPIB_DATA_IN));
+				    // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x0D) GPIB_EOI_IN = 1;
+				    else                                GPIB_EOI_IN = 0;
+                }
+					
+				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
 
 			} else if( (GPIB_NDAC_OUT == 1) && (GPIB_DAV_IN == 1) ) {
 

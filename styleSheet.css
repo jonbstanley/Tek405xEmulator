@@ -190,12 +190,16 @@ table
 {
   width:  35px;
 }
-
+/*
 #fileSecret
 {
   width:  40px;
 }
-
+*/
+#fileDesc
+{
+  width: 160px;
+}
 #fileSize
 {
   width:  56px;
@@ -240,7 +244,7 @@ table
   overflow: hidden;
 }
 
-#filelist
+#fileList
 {
   width:  50px;
 }

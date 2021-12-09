@@ -1,5 +1,5 @@
-// Tek 4050 Emulator Storage Script
-// 07-10-2021
+// Tek 4051 Emulator Storage Script
+// 01-12-2021
 
 
 function Storage() {
@@ -9,10 +9,16 @@ function Storage() {
     var content = new Uint8ClampedArray();
     var bindata = [];
     var binDataPtr = 0;
-    var currentfile = "";
+    var currentFile = "";
     var copylen = 256;
     var copyterm = 0x80;
     var copycnt = 0;
+    var dirLength = 0;
+    var dirFidx = 0;
+    var dirFname = "";
+    var dirFnamePtr = 0;
+    var fileLength = 46;    // Including CR and NULL
+    var filesPerDirectory = 255;
     
     const fileTypes = [
 	    {idx:'A',type:'ASCII'},
@@ -28,64 +34,81 @@ function Storage() {
 	    {idx:'T',usage:'TEXT'}
     ]; 
 
+    // Initialise the file index and and list
+    loadFileIndex();
+    updateFileList();
+    renameIdxKey();	// Tmporary fix to rename IDX key to 999
+
+
+    // Save a file to web storage
     this.saveFile = function(){
 	    var filelistobj = document.getElementById('fileList');
-        var save = false;
-        currentfile = document.getElementById('fileNum').value;
-	    if (currentfile != "") {
-            if ( localStorage.getItem(currentfile) && !confirm("Overwrite existing file?") ) {
+        currentFile = document.getElementById('fileNum').value;
+        if (currentFile == "") {
+            // Prompt for a file number
+            var filenum = 0;
+            while (filenum == 0) {
+                var nextfnum = getNextAvailableFnum();
+                if (nextfnum) {
+                    var filenum = prompt("Please provide a file number:", nextfnum);
+                    if (filenum) {
+                        if ( (filenum>0) && (filenum<filesPerDirectory) ) {
+                            currentFile = filenum.toString();
+                        }else{
+                            filenum = 0;
+                        }
+                    }else{
+                        return;
+                    }
+                }else{
+                    alert("Unable to save. No files available!");
+                    return;
+                }
+            }
+        }
+console.log("Fnum: " + currentFile);
+        // Save the file
+        if (currentFile != "") {
+            // Save data to web storage
+            if ( localStorage.getItem(currentFile) && !confirm("Overwrite existing file?") ) {
                 return;
             }else{
 //		              localStorage.setItem(fnumstr, btoa(String.fromCharCode.apply(null,content)));
-		        localStorage.setItem(currentfile, String.fromCharCode.apply(null,content));
+		        localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
             }
-//                if (confirm("Overwrite existing file?")){
-//		            localStorage.setItem(fnumstr, btoa(String.fromCharCode.apply(null,content)));
-//		            localStorage.setItem(fnumstr, String.fromCharCode.apply(null,content));
-//                }else{
-//                    return;
-//                }
-//            }else{
-//              localStorage.setItem(fnumstr, btoa(String.fromCharCode.apply(null,content)));
-//                localStorage.setItem(fnumstr, String.fromCharCode.apply(null,content));
-//            }
+
+            // Save file settings to index
+            updateRecordFromControls();
+            // Save index and update file list
             saveFileIndex();
 		    clearFileList();
 		    updateFileList();
-		    filelistobj.value = currentfile;
-//		    updateFileInfoCtrls(fnumstr);
-	    }else{
-		    alert("File number required!");
+            // Set currently selected item in Select dropdown
+			selectCurrentFile(currentFile);
 	    }
     }
 
 
+    // Retrieve a file from web storage
     this.loadFile = function(){
         // Get the selected file number
 	    var filelistobj = document.getElementById('fileList');
-	    currentfile = filelistobj.options[filelistobj.selectedIndex].text;
+	    currentFile = filelistobj.options[filelistobj.selectedIndex].text;
         // Update size field
-	    var fsize = document.getElementById('fileSize');
+//	    var fsize = document.getElementById('fileSize');
         // Update the file number field
         var filenumobj = document.getElementById('fileNum');
-	    filenumobj.value = currentfile;
+	    filenumobj.value = currentFile;
         // Load the file
-	    if (currentfile != "") {
-            selectCurrentFile(currentfile);
-//            content = new Uint8ClampedArray();
-//            var filedata = atob(localStorage.getItem(idx));
-//            var filedata = localStorage.getItem(fnumstr);
-//            content = str2uint8Array(filedata);
-//            loadFileIndex();
-//            updateFileInfoCtrls(fnumstr);
-//          fsize.value = content.length;
-//            displayInViewer();
+	    if (currentFile != "") {
+            selectCurrentFile(currentFile);
 	    }else{
 		    alert("File number required!");
 	    }
     }
 
 
+    // Remove file from web storage
     this.deleteFile = function(){
 //        var filenumobj = document.getElementById('fileNum');
 	    var filelistobj = document.getElementById('fileList');
@@ -113,7 +136,8 @@ function Storage() {
 	    }
     }
 
-    // Select file for upload to Tek when 'Select' clicked
+
+    // Select file for upload to Tek when 'Select' button clicked
     this.selectTekFile = function(){
         if (content) upload_to_tek(content.buffer);
 	    this.closeStorage();
@@ -143,13 +167,15 @@ function Storage() {
         document.getElementById('fileViewer').value = "";
 	    document.getElementById('fileType').value = "";
 	    document.getElementById('fileUsage').value = "";
-	    document.getElementById('fileSecret').value = "N";
-	    document.getElementById('fileSize').value = "";
+	    document.getElementById('fileDesc').value = "";
+//	    document.getElementById('fileSecret').value = "N";
         document.getElementById('fname').innerHTML = "Drop a file to this window";
         document.getElementById('fileNum').value = "";
+	    document.getElementById('fileSize').value = "";
     }
 
 
+    // Delete everything in web storage
     this.deleteAll = function(){
         if (confirm("WARNING: this will clear ALL storage and cannot be undone!\nDo you still wish to continue?")){
             // Clear viewer
@@ -165,13 +191,14 @@ function Storage() {
     }
 
 
+    // Hide the storage window
     this.closeStorage = function(){
         var storageobj = document.getElementById('storage');
         storageobj.style.display="none";
     }
 
 
-    // Read a file from disk into storage
+    // Read a file from disk into web storage
     function readFile(file, storageobj){
 
         if (file) {
@@ -191,13 +218,12 @@ function Storage() {
                 contentarray = new Uint8Array(filecontent);
                 content = contentarray;
                 fsize.value = content.length;
-			    fnumobj.value = getFileInfo(filename);  // Sanity check: is it a 4924 emu file?
-			    if (fnumobj.value != "") {
-//				    updateFileInfo(fnumstr);
-//				    updateFileInfoCtrls(fnumobj.value);
-				    storageobj.saveFile();
+			    var flashfileinfo = isFlashFile(filename);  // Sanity check: is it a 405x Flash Drive file?
+			    if (flashfileinfo) {
+                    fnumobj.value = flashfileinfo[0];
+                    updateFileRecord(flashfileinfo);
                     updateFileInfoCtrls(fnumobj.value);
-			    }
+				    storageobj.saveFile();			    }
                 displayInViewer();
 		        //console.log(progobj.value);
 		        // If a direct upload to the emulator has bene requested
@@ -217,6 +243,7 @@ function Storage() {
     }
 
 
+    // Update the viewer window
     function displayInViewer(){
         var viewerobj = document.getElementById('fileViewer');
         // Clear current content
@@ -230,6 +257,7 @@ function Storage() {
     }
 
 
+    // Handler to import files in 405x Flash Drive format
     function import4924Dir(storageobj){
         var fileobj = document.getElementById('importObj');
         var filelistobj = document.getElementById('fileList');
@@ -252,9 +280,11 @@ function Storage() {
 			    content = [];
         	    contentarray = new Uint8Array(filecontent);
         	    content = contentarray;
-                fnumstr = getFileInfo(filename);    // Sanity check - valid 4924 emu file?
-                if (fnumstr != "") {
-                    fnumobj.value = fnumstr;
+                var fileinfo = isFlashFile(filename);  // Sanity check - valid 4924 emu file?
+//                fnumstr = getFileInfo(filename);
+                if (fileinfo){  
+//                if (fnumstr != "") {
+                    fnumobj.value = fileinfo[0];
 			        storageobj.saveFile();
                 }
                 if (idx == numfiles-1) {
@@ -279,6 +309,7 @@ function Storage() {
     }
 
 
+    // Hadler to restore storage from archive
     function restoreStorage(){
         var file = document.getElementById('importObj').files[0];
         var freader = new FileReader();
@@ -308,37 +339,31 @@ function Storage() {
     }
 
 
+    // Process file dropped onto viewer window
     this.dropHandler = function(ev, storageObj) {
-        console.log('File(s) dropped');
-
+        var file;
         // Prevent default behavior (Prevent file from being opened)
         ev.preventDefault();
 
-//      if (ev.dataTransfer.items) {
-        // Use DataTransferItemList interface to access the file(s)
-//      for (var i = 0; i < ev.dataTransfer.items.length; i++) {
-        // If dropped items aren't files, reject them
-//          if (ev.dataTransfer.items[i].kind === 'file') {
-//          var file = ev.dataTransfer.items[i].getAsFile();
-//          var program = document.getElementById('fileViewer');
-//          console.log('... file[' + i + '].name = ' + file.name);
-        
-//          program.value = ev.dataTransfer.getData();
-//          }
-//      }
-//      } else {
-        // Use DataTransfer interface to access the file(s)
-//      for (var i = 0; i < ev.dataTransfer.files.length; i++) {
-        var file = ev.dataTransfer.files[0];
+        if (ev.dataTransfer.items) {
+            // Use DataTransferItemList interface to access the file(s)
+            // If dropped items aren't files, reject them
+            if (ev.dataTransfer.items[0].kind === 'file') file = ev.dataTransfer.items[0].getAsFile();
+        } else {
+            // Use DataTransfer interface to access the file(s)
+            file = ev.dataTransfer.files[0];
+        }
         readFile(file, storageObj);
     }
 
 
+    // Prevent default dragover action
     this.dragOverHandler = function(event){
         event.preventDefault();
     }
 
 
+    // Storage import/export options
     this.storageAdm = function(inbound){
         var idx = document.getElementById('importType').selectedIndex;
 
@@ -379,6 +404,7 @@ function Storage() {
     }
 
 
+    // Import handler
     this.importObject = function(storageObj) {
         var idx = document.getElementById('importType').selectedIndex;
         if (idx == 0) {
@@ -392,44 +418,22 @@ function Storage() {
     }
 
 
+    // File export handler
     function exportFile(filename, contentType) {
         const file = new Blob([content], {type: contentType});
         performExport(filename, file);
     }
 
 
+    // Storage archive export handler
     function archiveStorage(filename, contentType) {
         var content = JSON.stringify(localStorage);
         const filedata = new Blob([content], {type: contentType});
         performExport(filename, filedata);
     }
 
-/*
-    function export4924(){
-        var filelistobj = document.getElementById('fileList');
-        var fnumstr = "";
-        var idx = 0;
-        var filename;
-        var filedata;
-        if (filelistobj && filelistobj.length>0) {
-            for(var i=0; i<filelistobj.length; i++){
-                fnumstr = filelistobj[i].text;
-                filename = "";
-                if (fnumstr != "IDX") {
-                    content = [];
-                    // var filedata = atob(localStorage.getItem(idx));
-                    filedata = localStorage.getItem(fnumstr);
-                    content = str2uint8Array(filedata);
-                    idx = findFileRecord(fnumstr);
-                    if (idx>-1) filename = getFilename(fnumstr);
-                    if (filename === "") filename = "File-" + fnumstr + ".tek";
-                    exportFile(filename, 'application/octet-stream');   
-                }
-            }
-        }
-    }
-*/
 
+    // Handler to export files in 405x Flash Drive format
     function export4924(){
         var filelistobj = document.getElementById('fileList');
         var fnumstr = "";
@@ -442,7 +446,7 @@ function Storage() {
             for(var i=0; i<filelistobj.length; i++){
                 fnumstr = filelistobj[i].text;
                 filename = "";
-                if (fnumstr != "IDX") {
+                if (fnumstr != "999") {
                     content = [];
                     // var filedata = atob(localStorage.getItem(idx));
                     filedata = localStorage.getItem(fnumstr);
@@ -464,6 +468,7 @@ function Storage() {
     }
 
 
+    // File export handler
     function performExport(filename, filecontent) {
         const exported = document.createElement('a');
         exported.href = URL.createObjectURL(filecontent);
@@ -474,6 +479,7 @@ function Storage() {
     }
 
 
+    // Show the storage window
     this.showStorageOptions = function(){
         var storage = document.getElementById('storage');
         var idx = "0";
@@ -484,16 +490,7 @@ function Storage() {
     }
 
 
-    //function str2arraybuf(str) {
-    //  var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
-    //  var bufView = new Uint16Array(buf);
-    //  for (var i=0, strLen=str.length; i<strLen; i++) {
-    //    bufView[i] = str.charCodeAt(i);
-    //  }
-    //  return buf;
-    //}
-
-
+    // Convert string to uint8 array
     function str2uint8Array(str) {
         if (str) {
             var tempArray = new Uint8Array(str.length);
@@ -505,6 +502,7 @@ function Storage() {
     }
 
 
+    // Handler to upload program to the Tek emulator
     this.readFromTape = function(idx,type) {
 	    // console.log("Read file idx: " + idx);
 	    if (idx != '0') {
@@ -531,13 +529,15 @@ function Storage() {
     }
 
 
+    // Prepare to save file to "tape" (web storage)
     this.saveToTapeReady = function(){
-console.log("Ready to save file...");
+//console.log("Ready to save file...");
 	    var filecontent = document.getElementById('fileViewer');
 	    filecontent.value = "";
         content = new Uint8ClampedArray();
         bindata = [];
     }
+
 
 // Obsoleted
     this.saveToTapeBU = function(pchar) {
@@ -592,21 +592,21 @@ console.log("Ready to save file...");
 		    this.saveFile();
             var idx = findFileRecord(fnumstr);
             if (idx<0) {
-                fileIndex.push([currentfile,type,'P','N',""]);
+                fileIndex.push([currentFile,type,'P','N',""]);
             }else{
                 fileIndex[idx][1] = type;
                 fileIndex[idx][2] = 'P';
             }
             saveFileIndex();
-            updateFileInfoCtrls(currentfile);         
+            updateFileInfoCtrls(currentFile);         
 	    }
     }
 
 
     // PRINT to a type NEW or ASCII file. Change type NEW to ASCII.
     this.printToFile = function(byte){
-        var idx = findFileRecord(currentfile);
-//console.log("PRINT: current file: " + currentfile);
+        var idx = findFileRecord(currentFile);
+//console.log("PRINT: current file: " + currentFile);
 //console.log("PRINT: file index: " + idx);
 //console.log(String.fromCharCode(byte));
         if (idx > -1) {
@@ -621,7 +621,7 @@ console.log("Ready to save file...");
                     fileIndex[idx][1] = 'A';
                     fileIndex[idx][2] = 'D';
                     saveFileIndex();
-                    updateFileInfoCtrls(currentfile);
+                    updateFileInfoCtrls(currentFile);
                 }
             }
         }
@@ -630,8 +630,8 @@ console.log("Ready to save file...");
 
     // WRITE to a type NEW or BINARY file. Change type NEW to BINARY.
     this.writeToFile = function(byte){
-        var idx = findFileRecord(currentfile);
-//console.log("PRINT: current file: " + currentfile);
+        var idx = findFileRecord(currentFile);
+//console.log("PRINT: current file: " + currentFile);
 //console.log("PRINT: file index: " + idx);
 //console.log("Received: " + String.fromCharCode(byte));
         if (idx > -1) {
@@ -646,7 +646,7 @@ console.log("Ready to save file...");
                     fileIndex[idx][1] = 'B';
                     fileIndex[idx][2] = 'D';
                     saveFileIndex();
-                    updateFileInfoCtrls(currentfile);                
+                    updateFileInfoCtrls(currentFile);                
                 }
             }
         }
@@ -657,13 +657,13 @@ console.log("Ready to save file...");
     // Character sequence ended with CR. Save the file to storage.
     this.writeToFileDone = function(){
         content = Uint8ClampedArray.from(bindata);
-        localStorage.setItem(currentfile, String.fromCharCode.apply(null,content));
+        localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
     }
 
 
     // INPUT data from ASCII file
     this.inputFromFile = function(){
-        var idx = findFileRecord(currentfile);
+        var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
         // This will make a NEW or unassigned file ASCII DATA
@@ -680,7 +680,7 @@ console.log("Ready to save file...");
 
     // COPY data from drawing file
     this.copyFromFile = function(){
-        var idx = findFileRecord(currentfile);
+        var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
         // This will make a NEW or unassigned file ASCII DATA
@@ -716,11 +716,10 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
-
-    // READ data from BINARY file
+    // READ from BINARY data file
     this.readFromFile = function(){
-        var idx = findFileRecord(currentfile);
-//console.log("Current filenum: " + currentfile);
+        var idx = findFileRecord(currentFile);
+//console.log("Current filenum: " + currentFile);
 //console.log("Index: " + idx);
         var ftype = fileIndex[idx][1];
         var fusage = fileIndex[idx][2];
@@ -737,35 +736,9 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
-
-
-/*
-    // Read data from BINARY PROG file
+    // Read from BINARY PROG file
     this.readBinProg = function(){
-        var idx = findFileRecord(currentfile);
-//console.log("readBinProg: Current filenum: " + currentfile);
-//console.log("readBinProg: Index: " + idx);
-        if (idx >= 0) {
-            var ftype = fileIndex[idx][1];
-            var fusage = fileIndex[idx][2];
-            // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
-            // This will make a NEW or unassigned file ASCII DATA
-            if ( (ftype == 'B') && (fusage == 'P') ) {
-                if (binDataPtr < bindata.length){
-                    var dataval = bindata[binDataPtr];
-                    if (binDataPtr == bindata.length - 1) binDataPtr |= 0x0100;
-                    binDataPtr++;
-                    return dataval;
-                }
-            }
-        }
-        return -1;
-    }
-*/
-
-    // Read data from BINARY PROG file
-    this.readBinProg = function(){
-        var idx = findFileRecord(currentfile);
+        var idx = findFileRecord(currentFile);
         if (idx >= 0) {
             var ftype = fileIndex[idx][1];
             var fusage = fileIndex[idx][2];
@@ -782,8 +755,6 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
-
-
     // FIND command - select the requested file
     this.findFile = function(fnumstr){
 //console.log("4051 requested file: " + fnumstr);
@@ -791,7 +762,6 @@ console.log("EOI: " + (byteval >> 8));
             binDataPtr = 0;
             copycnt = 0;
             selectCurrentFile(fnumstr);
-//            updateFileList(fnumstr);
             if (content && content.length > 0) {
                 bindata = Array.from(content);
             }else{
@@ -801,21 +771,108 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
+    // Get the next directory entry
+    this.getDirEntry = function(){
+        var filelistobj = document.getElementById('fileList');
+        if (dirFnamePtr == 0) {
+            if (dirFidx == filelistobj.length) dirFidx = 0; // Reached end of list - start at the begining
+            var idx = findFileRecord(filelistobj.options[dirFidx].value);
+            dirFidx++;
+            if (idx>-1) {
+                var fnumstr = fileIndex[idx][0];
+                if (fnumstr == "999") { // Skip over IDX record
+                    dirFidx++;
+                    idx = findFileRecord(filelistobj.options[dirFidx].value);
+                    fnumstr = fileIndex[idx][0];
+                }
+                var filename = getFilename(fnumstr);
+                if (filename.charAt(7) == 'L') dirFidx = 0;  // Reached LAST - start at the begining
+                if ( (fileIndex[1] != "N") && (fileIndex[2] != "N") ) { // Is it a marked file?
+//                var fileinfo = isFlashFile(filename);    
+//                if (fnumstr != "") {
+                    dirFname = filename;
+                    dirFnamePtr++;
+                    return dirFname.charCodeAt(0);
+                }
+            }
+        }else{
+            // Send byte
+            if (dirFnamePtr == dirFname.length) {
+                dirFnamePtr = 0;
+                dirFname = "";
+                return 0x0D;
+            }else{
+                dirFnamePtr++;
+                return dirFname.charCodeAt(dirFnamePtr-1);
+            }
+        }
+    }
+
+
+    function fileIndexCount() {
+        var i = 0;
+        for (i in fileIndex) {
+        }
+        return i;
+    }
+
+
     // Select the current file - load file and update controls and index
     function selectCurrentFile(fnumstr){
 	    if (fnumstr) {
             content = new Uint8ClampedArray();
-            currentfile = fnumstr;
+            currentFile = fnumstr;  // Set global current file indicator
             var filelistobj = document.getElementById('fileList');
             // Load the file content
 //            var filedata = atob(localStorage.getItem(idx));
             var filedata = localStorage.getItem(fnumstr);
             content = str2uint8Array(filedata);
-            // Load (refresh) the index
+            // Load (refresh) the index (in case it changed)
             loadFileIndex();
             // Update the state of the file controls
             updateFileInfoCtrls(fnumstr);
+            // Set file selector control to current file
             filelistobj.value = fnumstr;
+            // Display file description if available
+            var fidx = findFileRecord(fnumstr);
+            var fnameobj = document.getElementById('fname');
+            var fdescobj = document.getElementById('fileDesc');
+            if (fidx>-1) {
+                var fileinfo = getFileRecord(fidx);
+                if (fileinfo[3] == "") {
+//console.log("No desc");
+                    fnameobj.innerHTML = "No description";
+                    fdescobj.value = "";
+                }else if ( (fileinfo[3]=='N') || (fileinfo[3]=='S') ) {   // Temp to deal with Secret
+//console.log("Secret");
+                    if (fileinfo[4] == "") {
+//console.log("Secret-no fname");
+                        fnameobj.innerHTML = "No description";
+                        fdescobj.value = "";
+                    }else{
+//console.log("Fname present");
+                        fnameobj.innerHTML = getFilename(fileinfo[0]);
+                        fdescobj.value = getFileDescription(fileinfo[4]);
+                    }
+                }else if ( (fileinfo[1]=='') || (fileinfo[2]=='') ){
+                    if ( (fileinfo[1]=='N') || (fileinfo[1]=='L') ) {
+                        if (fileinfo[1]=='N') fnameobj.innerHTML = "NEW";
+                        if (fileinfo[1]=='L') fnameobj.innerHTML = "LAST";
+                        fdescobj.value = "";
+                    }else{
+//console.log("Not marked");
+                        fnameobj.innerHTML = "File not marked!";
+                        fdescobj.value = fileinfo[3];
+                    }
+                }else{
+//console.log("Other");
+                    fnameobj.innerHTML = getFilename(fileinfo[0]);
+                    fdescobj.value = fileinfo[3];
+                }
+            }else{  // No record available
+                fnameobj.innerHTML = "No description";
+                fdescobj.value = "";
+            }
             // Display content in viewer
             displayInViewer();
         }
@@ -834,12 +891,12 @@ console.log("EOI: " + (byteval >> 8));
 
 
     // Update the file select control
-    function updateFileList(idx) {
+    function updateFileList() {
 	    var filelist = Object.keys(localStorage).sort(function(a,b){return a - b});
 	    var filelistobj = document.getElementById('fileList');
 	    // Create file list
 	    for (var i=0; i<filelist.length; i++) {
-            if (filelist[i]!="IDX") {
+            if (filelist[i]!="999") {
 		        var opt = document.createElement('option');
 		        opt.textContent = filelist[i];
 		        opt.value = filelist[i];
@@ -862,7 +919,7 @@ console.log("EOI: " + (byteval >> 8));
 		    var idx = findFileRecord(filenumstr);
 		    // If no record then create one otherwise update
 		    if (idx<0) {
-			    fileIndex.push([filenumstr,type,'N','N',""]);
+			    fileIndex.push([filenumstr,type,'N',"",""]);
 		    }else{
 			    fileIndex[idx][1] = type;
 		    }
@@ -881,7 +938,7 @@ console.log("EOI: " + (byteval >> 8));
 		    var usage = usageobj.options[usageobj.selectedIndex].value;
 		    // If no record then create one otherwise update
 		    if (idx<0) {
-			    fileIndex.push([filenumstr,'N',usage,'N',""]);
+			    fileIndex.push([filenumstr,'N',usage,"",""]);
 		    }else{
 			    fileIndex[idx][2] = usage;
 		    }
@@ -889,7 +946,7 @@ console.log("EOI: " + (byteval >> 8));
 //        console.log("File index change: " + fileIndex);
     }
 
-
+/*
     this.toggleSecret = function(){
 	    var filenumstr = getCurrentFileNum();
 	    if (filenumstr) {
@@ -907,9 +964,9 @@ console.log("EOI: " + (byteval >> 8));
 	    }
 //        console.log("File index change: " + fileIndex);
     }
+*/
 
-
-    // Get the currently selected file number
+    // Returns the file number currently selected in the Select drop down
     function getCurrentFileNum(){
 	    var listobj = document.getElementById('fileList');
 	    if (listobj.selectedIndex>-1) {
@@ -920,7 +977,7 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
-    // Find a record for the file in the index
+    // Finds the index of the file record given a file number
     // Not found returns -1
     function findFileRecord(fnumstr){
 	    // Find record or return -1 if not found
@@ -947,7 +1004,7 @@ console.log("EOI: " + (byteval >> 8));
 			    if (i < (array.length-1)) stringified += ':';
 		    });
         }
-        localStorage.setItem("IDX", stringified);
+        localStorage.setItem("999", stringified);
     }
 
 
@@ -956,7 +1013,7 @@ console.log("EOI: " + (byteval >> 8));
         var record = [];
         var index = [];
         var raw = [];
-        stringified = localStorage.getItem("IDX");
+        stringified = localStorage.getItem("999");
         if (stringified) {
 		    raw = stringified.split(':');
     	    raw.forEach(item => { record = item.split(','); index.push(record)});
@@ -969,22 +1026,23 @@ console.log("EOI: " + (byteval >> 8));
     function updateFileInfoCtrls(fnumstr) {
         var ftype = document.getElementById('fileType');
         var fusage = document.getElementById('fileUsage');
-        var fsecret = document.getElementById('fileSecret');
+        var fdesc = document.getElementById('fileDesc');
 	    var fsize = document.getElementById('fileSize');
         ftype.value = '';
         fusage.value = '';
-        fsecret.value = 'N';
+//        fsecret.value = 'N';
         if (fileIndex) {
+            dirLength = fileIndex.length;
             var idx = findFileRecord(fnumstr);
             if (idx>-1) {
                 if (fileIndex[idx][1]) ftype.value = fileIndex[idx][1];
                 if (fileIndex[idx][2]) fusage.value = fileIndex[idx][2];
-                if (fileIndex[idx][3]) {
-                    if (fileIndex[idx][3] === 'S') fsecret.value = 'S';
-                }
+//                if (fileIndex[idx][3]) {
+//                    if (fileIndex[idx][3] === 'S') fsecret.value = 'S';
+//                }
+                if (fileIndex[idx][3]) fdesc.value = fileIndex[idx][3];
             }
         }
-        var fsize = document.getElementById('fileSize');
         if (content && content.length > 0) {
             fsize.value = content.length;
         }else{
@@ -993,9 +1051,9 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
-    // Get file information from 4924 emulator filename
-    function getFileInfo(filename){
-	    var finfo = [];
+    // Get file information from 405x Flash Drive filename
+    // Returns file number for valid flash file, otherwise NULL
+    function isFlashFile(filename){
 //	    console.log("Filename: " + filename);
 	    var fnum = parseInt(filename.substring(0,6));
 	    if (isNaN(fnum)) return null;
@@ -1003,32 +1061,53 @@ console.log("EOI: " + (byteval >> 8));
 	    if (!isFileTypeValid(ftype)) return null;
 	    var fusage = filename.charAt(15);
 	    if (!isFileUsageValid(fusage)) return null;
-	    var fsecret = filename.charAt(32);
-	    if (fsecret != 'S') fsecret = 'N';
+        var fdesc = getFileDescription(filename);
 
-        var idx = findFileRecord(fnum);
+        var fileinfo = [fnum, ftype, fusage, fdesc, filename];
+        return fileinfo;
+    }
 
+
+    // Update the file record from given parameters
+    // Record is updated if present or created if not
+    function updateFileRecord(fileinfo){
+        var idx = findFileRecord(fileinfo[0]);
         if (idx>-1) {
-            // Update existing record
-            fileIndex[idx][1] = ftype;
-            fileIndex[idx][2] = fusage;
-            fileIndex[idx][3] = fsecret;
-            fileIndex[idx][4] = filename;
+            // Record already exists so update
+            fileIndex[idx][1] = fileinfo[1];    // File type
+            fileIndex[idx][2] = fileinfo[2];    // File usage
+            fileIndex[idx][3] = fileinfo[3];    // File description
+            fileIndex[idx][4] = fileinfo[4];    // File full name
         }else{
             // Create a new record
-	        finfo = [fnum, ftype, fusage, fsecret, filename];
-	        fileIndex.push(finfo);
+	        fileIndex.push(fileinfo);
         }
+    }
 
-//	    console.log("File size: " + fnum);
-//	    console.log("File type: " + ftype);
-//	    console.log("File usage: " + fusage);
-//	    console.log("File secret: " + fsecret);
-//	    console.log("File name: " + filename);
 
-//	    console.log("File index: " + fileIndex);
+    // Updates file record from the status of the controls
+    function updateRecordFromControls() {
+//        var fnumobj = document.getElementById('fileList');
+//        var fnum = fnumobj.options[fnumobj.selectedIndex].value;
+        var ftype = document.getElementById('fileType').value;
+        var fusage = document.getElementById('fileUsage').value;
+        var fdesc = document.getElementById('fileDesc').value;
+        var idx = findFileRecord(currentFile);
+        if (idx>-1) {
+            // Update the existing record
+            fileIndex[idx][1] = ftype;
+            fileIndex[idx][2] = fusage;
+            fileIndex[idx][3] = fdesc;
+        }else{
+            // Create a new record
+            var fileinfo = [fnum, ftype, fusage, fdesc, ""];
+        }
+    }
 
-	    return fnum;
+
+    // Get the file record for the given index number
+    function getFileRecord(idx) {
+        return fileIndex[idx];
     }
 
 
@@ -1058,11 +1137,11 @@ console.log("EOI: " + (byteval >> 8));
 	    var idx = findFileRecord(fnumstr);
 	    var filename = "";
 	    if (idx > -1) {
-		    if (fileIndex[idx][4] != "") {
-                filename = fileIndex[idx][4];
-                filename = updateFileSize(filename);
-                return filename;
-            }
+//		    if (fileIndex[idx][4] != "") {
+//                filename = fileIndex[idx][4];
+//                filename = updateFileSize(fnumstr, filename);
+//                return filename;
+//            }
 
 		    var fnum = fileIndex[idx][0];
 		    var ftype = "";
@@ -1075,13 +1154,30 @@ console.log("EOI: " + (byteval >> 8));
 			    if (fileUsages[i].idx == fileIndex[idx][2]) fusage = fileUsages[i].usage;
 		    }
 
-            var fsecret = fileIndex[idx][3];
-            if (fsecret === 'N') fsecret = ' ';
+		    var fdesc = "";
+	        if ( (fileIndex[idx][3] == "") && (fileIndex[idx][4] = "") ) {
+                fdesc = "---------------";
+            }else if ( (fileIndex[idx][3]=='N') || (fileIndex[idx][3]=='S') ) { // Temp to deal with secret
+                if (fileIndex[idx][4] != "") {                
+                    fdesc = getFileDescription(fileIndex[idx][4]);
+                }else{
+                    fdesc = "---------------";
+                }
+            }else{
+            	if (fileIndex[idx][3] == "") {
+                	fdesc = getFileDescription(fileIndex[idx][4]);
+               	}else{
+               		fdesc = fileIndex[idx][3];
+               	}
+            }
 
-		    var fsize = localStorage.getItem(fnumstr).length.toString();
+//            var fsecret = fileIndex[idx][3];
+//            if (fsecret === 'N') fsecret = ' ';
 
-		    filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(17) + fsecret + fsize.padStart(6);
+		    var fsizestr = localStorage.getItem(fnumstr).length.toString();
 
+//		    filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc + ' ' + fsecret + fsizestr.padStart(6);
+		    filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc + ' ' + fsizestr;
 	    }
 
 	    return filename;
@@ -1089,17 +1185,94 @@ console.log("EOI: " + (byteval >> 8));
     }
 
 
+    // Extracts the file description from the file name
+    function getFileDescription(filename) {
+        var ch = '';
+        var desc = "";
+        var depos = getLastSpacePos(filename);
+        var desclength = fileLength - 30;   // 30 = fnum[7] + ftype[8] + fusage[5] + fsize[7] + CR + NULL
+
+        // Extract description
+        for (var i=20; i<depos; i++) {
+            ch = filename.charAt(i);
+            if ( (ch != '[') && (ch != ']') ) {
+                desc = desc + ch;
+            }
+        }
+
+        // Truncate to 13 characters, pad if required
+        desc = desc.substr(0,desclength);
+        desc = desc.padEnd(desclength);
+        return desc;
+    }
+
+
     // Update the file size parameter
-    function updateFileSize(filename){
-        var fname = filename.substring(0, 33);
-        var fsize = 0;
-        if (content) fsize = content.length;
-        var fsizestr = fsize.toString().padStart(6);
+    function updateFileSize(fnumstr, filename){
+        var depos = getLastSpacePos(filename);
+        var fname = filename.substring(0, depos);
+        var fsizestr = localStorage.getItem(fnumstr).length.toString();
         fname = fname + fsizestr;
         return fname;
     }
 
-}
+
+    // Determine the position of the final space (start of file size)
+    function getLastSpacePos(filename) {
+        var lspos = filename.length;
+        var ch = '';
+        while ( (ch != ' ') && (lspos > 0) ) {
+            ch = filename.charAt(lspos);
+            lspos--;
+        } 
+        return lspos;
+    }
+
+    // Limit the length of the file description
+    this.fdLimit = function() {
+        var ftype = document.getElementById('fileType').value;
+//        var fusage = document.getElementById('fileUsage').value;
+        var desclen = fileLength - 30;
+        var fdescobj = document.getElementById('fileDesc');
+        var fdesc = fdescobj.value;
+        if ( (ftype=='N') || (ftype=='L') ) {
+            fdescobj.value = "";    // Can't name a LAST or NEW file
+        }else{        
+            if (fdesc.length > desclen) fdescobj.value = fdesc.substr(0, desclen);
+        }
+    }
+
+
+    // Temporary function to rename key 'IDX' to '999'
+	function renameIdxKey(){
+		var IDXitem = "";
+		if (IDXitem = localStorage.getItem("IDX")) {
+			localStorage.setItem("999", IDXitem);
+			localStorage.removeItem("IDX");
+			loadFileIndex();
+    		updateFileList();
+		}
+	}
+
+
+    // get the next available free file number
+    function getNextAvailableFnum(){
+        var filelistobj = document.getElementById('fileList');
+        var keylist = [];
+        for (var i=0; i<filelistobj.length; i++){
+            keylist.push(filelistobj.options[i].value);
+        }
+        keylist = keylist.sort(function(a,b){return a - b});
+        for (var i=0; i<255; i++){
+//console.log("Key: " + parseInt(keylist[i]) + "  I: " + i);
+            if (parseInt(keylist[i]) != (i+1)) return i+1;
+        }
+        return null;
+    }
+
+
+}	// End function Storage
+
 
 
 function getFnameTest(fnumstr){
