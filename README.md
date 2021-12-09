@@ -8,7 +8,7 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 ---
 
-For details of releases and what is new see Releases.md.
+For details of releases and what is new see <a href="https://github.com/Twilight-Logic/Tek405xEmulator/blob/master/Releases.md">Releases.md</a>.
 
 ---
 
