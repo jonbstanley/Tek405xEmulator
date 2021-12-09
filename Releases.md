@@ -1,5 +1,12 @@
 <B>Updates by Twilight Logic</B>
 
+Update 02 Dec 2021
+
+  - added ability to edit description field
+  - added support for dir command (secondary address 19)
+  - miscellaneous bug fixes
+  - removed support for 'Secret'
+
 Update 05 Nov 2021:
 
   - export to '4924 Emulator Directory':
