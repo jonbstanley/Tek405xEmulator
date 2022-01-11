@@ -1,5 +1,9 @@
 <B>Updates by Twilight Logic</B>
 
+Update 11 Jan 2022
+
+  - bug fix. File information set by the user was not getting saved when a new file was added to storage.
+
 Update 02 Dec 2021
 
   - added ability to edit description field

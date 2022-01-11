@@ -1092,12 +1092,6 @@ console.log("EOI: " + (byteval >> 8));
         var fdesc = document.getElementById('fileDesc').value;
         var idx = findFileRecord(currentFile);
 
-console.log("Idx: " + idx);
-console.log("fnum: " + fnum);
-console.log("fnum: " + ftype);
-console.log("fnum: " + fusage);
-console.log("fnum: " + fdesc);
-
         if (idx>-1) {
             // Update the existing record
             fileIndex[idx][1] = ftype;
