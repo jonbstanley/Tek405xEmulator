@@ -67,25 +67,25 @@ function Storage() {
             }
         }
 console.log("Fnum: " + currentFile);
-        // Save the file
+        // If we have a file number then Save the file
         if (currentFile != "") {
-            // Save data to web storage
+            // If file exists in web storage then prompt to overwrite
             if ( localStorage.getItem(currentFile) && !confirm("Overwrite existing file?") ) {
                 return;
             }else{
+                // Save data to web storage
 //		              localStorage.setItem(fnumstr, btoa(String.fromCharCode.apply(null,content)));
 		        localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
             }
-
             // Save file settings to index
-            updateRecordFromControls();
+            updateRecordFromControls(currentFile);
             // Save index and update file list
             saveFileIndex();
-		    clearFileList();
-		    updateFileList();
+            clearFileList();
+            updateFileList();
             // Set currently selected item in Select dropdown
-			selectCurrentFile(currentFile);
-	    }
+            selectCurrentFile(currentFile);
+        }
     }
 
 
@@ -1086,13 +1086,18 @@ console.log("EOI: " + (byteval >> 8));
 
 
     // Updates file record from the status of the controls
-    function updateRecordFromControls() {
-//        var fnumobj = document.getElementById('fileList');
-//        var fnum = fnumobj.options[fnumobj.selectedIndex].value;
+    function updateRecordFromControls(fnum) {
         var ftype = document.getElementById('fileType').value;
         var fusage = document.getElementById('fileUsage').value;
         var fdesc = document.getElementById('fileDesc').value;
         var idx = findFileRecord(currentFile);
+
+console.log("Idx: " + idx);
+console.log("fnum: " + fnum);
+console.log("fnum: " + ftype);
+console.log("fnum: " + fusage);
+console.log("fnum: " + fdesc);
+
         if (idx>-1) {
             // Update the existing record
             fileIndex[idx][1] = ftype;
@@ -1101,6 +1106,7 @@ console.log("EOI: " + (byteval >> 8));
         }else{
             // Create a new record
             var fileinfo = [fnum, ftype, fusage, fdesc, ""];
+            fileIndex.push(fileinfo);
         }
     }
 
