@@ -1,5 +1,5 @@
 // Tek 4051 Emulator Storage Script
-// 01-12-2021
+// 28-02-2022
 
 
 function Storage() {
@@ -66,7 +66,7 @@ function Storage() {
                 }
             }
         }
-console.log("Fnum: " + currentFile);
+//console.log("Currenfile:" + currentFile)
         // If we have a file number then Save the file
         if (currentFile != "") {
             // If file exists in web storage then prompt to overwrite
@@ -222,7 +222,7 @@ console.log("Fnum: " + currentFile);
 			    if (flashfileinfo) {
                     fnumobj.value = flashfileinfo[0];
                     updateFileRecord(flashfileinfo);
-                    updateFileInfoCtrls(fnumobj.value);
+                    updateCtrlsFromRecord(fnumobj.value);
 				    storageobj.saveFile();			    }
                 displayInViewer();
 		        //console.log(progobj.value);
@@ -268,6 +268,8 @@ console.log("Fnum: " + currentFile);
 
 	    storageobj.clearView();
 
+        alert("Importing files....\nIf many files have been selected this may take some time.\nPress OK to start.");
+
         function readNextFile(idx) {
             if (idx >= numfiles) return;
             var file = fileobj.files[idx];
@@ -282,11 +284,20 @@ console.log("Fnum: " + currentFile);
         	    content = contentarray;
                 var fileinfo = isFlashFile(filename);  // Sanity check - valid 4924 emu file?
 //                fnumstr = getFileInfo(filename);
-                if (fileinfo){  
-//                if (fnumstr != "") {
+                if (fileinfo){
+//console.log("Fileinfo0:" + fileinfo[0]);
+//console.log("Fileinfo1:" + fileinfo[1]);
+//console.log("Fileinfo2:" + fileinfo[2]);
+//console.log("Fileinfo3:" + fileinfo[3]);
+//console.log("Fileinfo4:" + fileinfo[4]);
+                    // Get the file number and set the F# field
                     fnumobj.value = fileinfo[0];
+                    // Update file controls
+                    updateCtrlsFromInfo(fileinfo);
+                    // Save file to storage (takes file number from F# field, file info from controls)
 			        storageobj.saveFile();
                 }
+                // Select the last imported file and display it
                 if (idx == numfiles-1) {
                     for (var i=0; i<filelistobj.options.length; i++) {
                         if (filelistobj.options[i] == fnumobj.value) {
@@ -295,7 +306,7 @@ console.log("Fnum: " + currentFile);
                     }
 //                    console.log("File to display: " + fnumobj.value);
                     displayInViewer();
-                    updateFileInfoCtrls(fnumobj.value);
+                    updateCtrlsFromRecord(fnumobj.value);
                 }
                 readNextFile(idx+1);
 		    }
@@ -305,7 +316,6 @@ console.log("Fnum: " + currentFile);
 
 	    // Finished with importing multiple files
         fileobj.removeAttribute('multiple','');
-
     }
 
 
@@ -385,8 +395,7 @@ console.log("Fnum: " + currentFile);
             }   
         } else if (idx == 2) {
             if (inbound) {
-//              console.log("Import 4050 Tape Emulator files...");
-	            if (confirm("WARNING: This will overwite all current files!")) {
+	            if (confirm("WARNING: This will overwite all existing files with the same file number!")) {
                     var multifile = document.getElementById('importObj');
                     multifile.setAttribute('multiple','true');
 		            multifile.click();
@@ -394,13 +403,11 @@ console.log("Fnum: " + currentFile);
                     return;
                 }
             }else{
-//                console.log("Export 4050 Tape Emulator files...");
                 export4924();
             }   
 	    } else {
             alert("ERROR: shouln't get here!");    
 	    }
-    
     }
 
 
@@ -598,7 +605,7 @@ console.log("Fnum: " + currentFile);
                 fileIndex[idx][2] = 'P';
             }
             saveFileIndex();
-            updateFileInfoCtrls(currentFile);         
+            updateCtrlsFromRecord(currentFile);         
 	    }
     }
 
@@ -621,7 +628,7 @@ console.log("Fnum: " + currentFile);
                     fileIndex[idx][1] = 'A';
                     fileIndex[idx][2] = 'D';
                     saveFileIndex();
-                    updateFileInfoCtrls(currentFile);
+                    updateCtrlsFromRecord(currentFile);
                 }
             }
         }
@@ -646,7 +653,7 @@ console.log("Fnum: " + currentFile);
                     fileIndex[idx][1] = 'B';
                     fileIndex[idx][2] = 'D';
                     saveFileIndex();
-                    updateFileInfoCtrls(currentFile);                
+                    updateCtrlsFromRecord(currentFile);                
                 }
             }
         }
@@ -830,7 +837,7 @@ console.log("EOI: " + (byteval >> 8));
             // Load (refresh) the index (in case it changed)
             loadFileIndex();
             // Update the state of the file controls
-            updateFileInfoCtrls(fnumstr);
+            updateCtrlsFromRecord(fnumstr);
             // Set file selector control to current file
             filelistobj.value = fnumstr;
             // Display file description if available
@@ -1023,23 +1030,37 @@ console.log("EOI: " + (byteval >> 8));
 
 
     // Update file info controls from index
-    function updateFileInfoCtrls(fnumstr) {
+    function updateCtrlsFromInfo(fileinfo) {
+        var ftype = document.getElementById('fileType');
+        var fusage = document.getElementById('fileUsage');
+        var fdesc = document.getElementById('fileDesc');
+	    var fsize = document.getElementById('fileSize');
+        ftype.value = fileinfo[1];
+        fusage.value = fileinfo[2];
+        fdesc.value = fileinfo[3];
+        if (content && content.length > 0) {
+            fsize.value = content.length;
+        }else{
+            fsize.value = "";
+        }
+    }
+
+
+
+    // Update file info controls from index
+    function updateCtrlsFromRecord(fnumstr) {
         var ftype = document.getElementById('fileType');
         var fusage = document.getElementById('fileUsage');
         var fdesc = document.getElementById('fileDesc');
 	    var fsize = document.getElementById('fileSize');
         ftype.value = '';
         fusage.value = '';
-//        fsecret.value = 'N';
         if (fileIndex) {
             dirLength = fileIndex.length;
             var idx = findFileRecord(fnumstr);
             if (idx>-1) {
                 if (fileIndex[idx][1]) ftype.value = fileIndex[idx][1];
                 if (fileIndex[idx][2]) fusage.value = fileIndex[idx][2];
-//                if (fileIndex[idx][3]) {
-//                    if (fileIndex[idx][3] === 'S') fsecret.value = 'S';
-//                }
                 if (fileIndex[idx][3]) fdesc.value = fileIndex[idx][3];
             }
         }
