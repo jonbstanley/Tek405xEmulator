@@ -296,15 +296,23 @@ function tek_load() {
 // Uploads data to the Tek
 function upload_to_tek(buffer) {
     var bytes = new Uint8Array(buffer);
-    var j = bytes.length;
+	var j = bytes.length;
 
-    // If array is empty force a NO PRORGAM FOUND (error 69) to prevent BUSY hang
-    if (j == 0){
-        bytes[0] = 256;
-        j = 1;
-    }
-    
-    tek.execute_load.call( tek, j, bytes ); // Source and destination data length may be different.
+    if (j > 0){
+		// Load the program into Tek memory
+		tek.execute_load.call( tek, j, bytes ); // Source and destination data length may be different.
+	}else{
+		// If array is empty force a NO PRORGAM FOUND (error 69) to prevent BUSY hang
+		upload_to_tek_fail();
+    }    
+}
+
+
+// Force a NO PRORGAM FOUND (error 69) to prevent BUSY hang
+function upload_to_tek_fail() {
+	var bytes = new Uint8Array([0xFF]);
+	j = 1;
+	tek.execute_load.call( tek, j, bytes );
 }
 
 

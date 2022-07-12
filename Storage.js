@@ -1,5 +1,5 @@
 // Tek 4051 Emulator Storage Script
-// 28-02-2022
+// 11-07-2022
 
 
 function Storage() {
@@ -7,7 +7,7 @@ function Storage() {
     var uploadTo4051 = 0;
     var fileIndex = [];
     var content = new Uint8ClampedArray();
-    var bindata = [];
+    var binData = [];
     var binDataPtr = 0;
     var currentFile = "";
     var copylen = 256;
@@ -19,6 +19,7 @@ function Storage() {
     var dirFnamePtr = 0;
     var fileLength = 46;    // Including CR and NULL
     var filesPerDirectory = 255;
+    var padcnt = 0;
     
     const fileTypes = [
 	    {idx:'A',type:'ASCII'},
@@ -215,8 +216,9 @@ function Storage() {
 	            var fsize = document.getElementById('fileSize');
 			    var fnumobj = document.getElementById('fileNum');
 
-                contentarray = new Uint8Array(filecontent);
-                content = contentarray;
+//                contentarray = new Uint8Array(filecontent);
+//                content = contentarray;
+                content = new Uint8Array(filecontent);
                 fsize.value = content.length;
 			    var flashfileinfo = isFlashFile(filename);  // Sanity check: is it a 405x Flash Drive file?
 			    if (flashfileinfo) {
@@ -522,6 +524,7 @@ function Storage() {
 		    	if (type == 'A') upload_to_tek(tempArray.buffer);
 		    	if (type == 'B') upload_to_tek_bin(tempArray.buffer);
 		    }else{
+				// Force Tek error message
 		    	upload_to_tek_fail();
 		    }
 	    }else{
@@ -542,7 +545,8 @@ function Storage() {
 	    var filecontent = document.getElementById('fileViewer');
 	    filecontent.value = "";
         content = new Uint8ClampedArray();
-        bindata = [];
+        binData = [];
+        binDataPtr = 0;
     }
 
 
@@ -551,15 +555,15 @@ function Storage() {
 	    var progobj = document.getElementById('fileViewer');
 	    if (pchar == 0x0D) {
 		    // Store CR as CR
-            bindata.push(pchar);
+            binData.push(pchar);
 	    }else if (pchar < 0x20) {
 		    // Store control characters preceded with backspace+underscore and adjusted value
-            bindata.push(0x10);
-            bindata.push(0x5F);
-            bindata.push(pchar + 0x40);
+            binData.push(0x10);
+            binData.push(0x5F);
+            binData.push(pchar + 0x40);
 	    }else{
 		    // Store character
-            bindata.push(pchar);
+            binData.push(pchar);
 	    }
     }
 // Obsoleted
@@ -570,27 +574,27 @@ function Storage() {
 	    //console.log(String.fromCharCode(pchar));
 	    if (pchar == 0x0D) {
 		    // Store CR as CR
-            bindata.push(pchar);
+            binData.push(pchar);
 	    }else if (pchar < 0x20) {
 		    // Store control characters preceded with backslash and adjusted value
-            bindata.push(0x5C);
-            bindata.push(pchar+0x40);
+            binData.push(0x5C);
+            binData.push(pchar+0x40);
 	    }else{
 		    // Store character
-            bindata.push(pchar);
+            binData.push(pchar);
 	    }
     }
 // Obsoleted
 
 
     this.saveToTapeBin = function(pchar) {
-        bindata.push(pchar);
+        binData.push(pchar);
     }
 
 
     this.saveToTapeDone = function(fnumstr,type) {
 	    var fnumobj = document.getElementById('fileNum');
-        content = Uint8ClampedArray.from(bindata);
+        content = Uint8ClampedArray.from(binData);
         displayInViewer();
 	    fnumobj.value = fnumstr;
 	    if (fnumstr == '0') {
@@ -620,8 +624,8 @@ function Storage() {
             var ftype = fileIndex[idx][1];
             // Print only to files of type NEW or ASCII
             if ( (ftype == "") || (ftype == 'N') || (ftype == 'A') ) {
-                if (binDataPtr == 0) bindata = [];
-                bindata.push(byte);
+                if (binDataPtr == 0) binData = [];
+                binData.push(byte);
                 binDataPtr++;
                 // Change type NEW to type ASCII
                 if ( (ftype == "") || (ftype == 'N') ) {
@@ -645,8 +649,8 @@ function Storage() {
             var ftype = fileIndex[idx][1];
             // Write only to files of type NEW or ASCII
             if ( (ftype == "") || (ftype == 'N') || (ftype == "B") ) {
-                if (binDataPtr == 0) bindata = [];
-                bindata.push(byte);
+                if (binDataPtr == 0) binData = [];
+                binData.push(byte);
                 binDataPtr++;
                 // Change type NEW to type ASCII
                 if ( (ftype == "") || (ftype == 'N') ) {
@@ -663,7 +667,7 @@ function Storage() {
 
     // Character sequence ended with CR. Save the file to storage.
     this.writeToFileDone = function(){
-        content = Uint8ClampedArray.from(bindata);
+        content = Uint8ClampedArray.from(binData);
         localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
     }
 
@@ -675,8 +679,8 @@ function Storage() {
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
         // This will make a NEW or unassigned file ASCII DATA
         if (ftype == 'A') {
-            if (binDataPtr < bindata.length){
-                var byte = bindata[binDataPtr];
+            if (binDataPtr < binData.length){
+                var byte = binData[binDataPtr];
                 binDataPtr++;
                 return byte;
             }
@@ -693,11 +697,11 @@ function Storage() {
         // This will make a NEW or unassigned file ASCII DATA
         if (ftype == 'A') {
             var byteval;
-            if ( (binDataPtr < bindata.length) ){
-                byteval = bindata[binDataPtr];
+            if ( (binDataPtr < binData.length) ){
+                byteval = binData[binDataPtr];
                 if ( (byteval == copyterm) || (byteval == 0x0D) ) copycnt = copylen;
-                if (binDataPtr == bindata.length) byteval = 0x01FF;    // End of file
-console.log("Copycnt: " + copycnt);
+                if (binDataPtr == binData.length) byteval = 0x01FF;    // End of file
+//console.log("Copycnt: " + copycnt);
 /*
                 if (copycnt == copylen-1){    // Copy length reached
                     byteval = byteval0x1;
@@ -713,8 +717,8 @@ console.log("Copycnt: " + copycnt);
                 }else{
                     copycnt++;
                 }
-console.log("Byte: " + (byteval & 0xFF));
-console.log("EOI: " + (byteval >> 8));
+//console.log("Byte: " + (byteval & 0xFF));
+//console.log("EOI: " + (byteval >> 8));
                 binDataPtr++;
                 return byteval;
             }
@@ -733,13 +737,13 @@ console.log("EOI: " + (byteval >> 8));
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
         // This will make a NEW or unassigned file ASCII DATA
         if ( (ftype == 'B') && (fusage == 'D') ) {
-            if (binDataPtr < bindata.length){
-                var byte = bindata[binDataPtr];
+            if ( (binDataPtr < binData.length) && binData.length ){
+                var byte = binData[binDataPtr];
                 binDataPtr++;
                 return byte;
             }
         }
-        return 0xFF;
+        return 0x1FF;
     }
 
 
@@ -749,38 +753,79 @@ console.log("EOI: " + (byteval >> 8));
         if (idx >= 0) {
             var ftype = fileIndex[idx][1];
             var fusage = fileIndex[idx][2];
-            // Read only from BINARY PROGRAM file
-            if ( (ftype == 'B') && (fusage == 'P') ) {
-                var dataval;
-                if (binDataPtr < bindata.length) dataval = bindata[binDataPtr];
-                if (binDataPtr == bindata.length) dataval = 0x01FF; 
-                binDataPtr++;
-                return dataval;
+            if (binData.length && (binData.length>0) ) {
+                if (padcnt==0) padcnt = (256 - (binData.length % 256) );
+                // Read only from BINARY PROGRAM file
+                if ( (ftype == 'B') && (fusage == 'P') ) {
+                    var dataval;
+                    if (binDataPtr < binData.length) dataval = binData[binDataPtr];
+//                if (binDataPtr == binData.length) dataval = 0x01FF;
+//                if (binDataPtr == binData.length-1) dataval += 0x100;
+                    binDataPtr++;
+                    if ( (binDataPtr-1) < binData.length ) {
+                        return dataval;
+                    }else if ( (binDataPtr-1) == binData.length ){
+//                        padcnt--;
+                        return 0xFF;
+                    }else{
+//console.log("Padding required: " + padcnt);
+//                        padcnt--;
+//                        if (padcnt>0) {
+//console.log("Storage sent 0x20.");
+                            return 0x20;
+//                        }else if (padcnt==0) {
+//console.log("Storage sent 0x20 with EOI!");
+//                            return 0x120;
+//                        }else{
+//                            return 0x1FF;
+//                        }
+                    }
+                }
             }
         }
-        return 0x01FF;
+        return 0x01FF;  // Null response with EOI
     }
 
 
     // FIND command - select the requested file
     this.findFile = function(fnumstr){
-//console.log("4051 requested file: " + fnumstr);
+//console.log("Finding requested file: " + fnumstr);
         if (parseInt(fnumstr) > 0 && parseInt(fnumstr) < 255) {
             binDataPtr = 0;
             copycnt = 0;
             selectCurrentFile(fnumstr);
-            if (content && content.length > 0) {
-                bindata = Array.from(content);
+            var ftype = document.getElementById('fileType').value;
+            if (ftype == 'B' && content && content.length) {
+                binData = Array.from(content);
             }else{
-                bindata = [];
+                binData = [];
             }
         }
     }
 
 
-    // Get the next directory entry
+    // CLOSE command - close the requested file
+    this.closeFile = function(){
+console.log("Closing current file...");
+//        if (parseInt(fnumstr) > 0 && parseInt(fnumstr) < 255) {
+            var filelistobj = document.getElementById('fileList');
+            content = new Uint8ClampedArray();
+            binData = [];
+            binDataPtr = 0;
+            currentFile = "";
+            copycnt = 0;
+            this.clearView();
+            filelistobj.value = "";
+//        }
+console.log("Done.");
+    }
+
+
+    // Get the name of the current file and send it to the 4051
     this.getDirEntry = function(){
         var filelistobj = document.getElementById('fileList');
+
+/*
         if (dirFnamePtr == 0) {
             if (dirFidx == filelistobj.length) dirFidx = 0; // Reached end of list - start at the begining
             var idx = findFileRecord(filelistobj.options[dirFidx].value);
@@ -794,7 +839,7 @@ console.log("EOI: " + (byteval >> 8));
                 }
                 var filename = getFilename(fnumstr);
                 if (filename.charAt(7) == 'L') dirFidx = 0;  // Reached LAST - start at the begining
-                if ( (fileIndex[1] != "N") && (fileIndex[2] != "N") ) { // Is it a marked file?
+                if ( (fileIndex[1] != "N") && (fileIndex[2] != "N") ) { // Ignore NEW marked files
 //                var fileinfo = isFlashFile(filename);    
 //                if (fnumstr != "") {
                     dirFname = filename;
@@ -812,6 +857,69 @@ console.log("EOI: " + (byteval >> 8));
                 dirFnamePtr++;
                 return dirFname.charCodeAt(dirFnamePtr-1);
             }
+        }
+*/
+
+//        var idx = findFileRecord(filelistobj.options[currentFile].value);
+//        var fnumstr = fileIndex[idx][0];
+        if (dirFnamePtr == 0) {
+            var idx = findFileRecord(currentFile);
+            var filename = "";
+            var stat = 0;
+            // File exists in index
+            if (idx > -1) {
+                stat++;
+                // File is marked
+//                if (fileIndex[idx][1] != "") stat++; // Ignore unmarked marked files
+                if ( (fileIndex[idx][1] == "A") || (fileIndex[idx][1] == "B") ) {
+                  if (fileIndex[idx][2] != "") stat++;
+                }
+                if ( (fileIndex[idx][1] == "N") || (fileIndex[idx][1] == "L") ) {
+                  stat++;
+                }
+                // Filename is not blank
+                filename = getFilename(currentFile);
+                if (filename != "") stat++;
+            }
+            if (stat == 3) {
+                dirFname = filename;
+                dirFnamePtr++;
+                return dirFname.charCodeAt(0);
+            }else{
+                dirFnamePtr = 0;
+                return 0xFF;            
+            }
+        }else{
+            // Send byte
+            if (dirFnamePtr == dirFname.length) {
+                dirFnamePtr = 0;
+                dirFname = "";
+                return 0x0D;
+            }else{
+                dirFnamePtr++;
+                return dirFname.charCodeAt(dirFnamePtr-1);
+            }
+        }
+    }
+
+
+    this.setDirEntry = function(rbyte){
+        console.log(String.fromCharCode(rbyte));
+        if (rbyte == 0x0D) {
+            console.log("Filename: " + dirFname);
+
+            // Valid format for marked file
+            if ( fileInfo = isFlashFile(dirFname)) {
+                updateFileRecord(fileInfo);
+                updateCtrlsFromInfo(fileInfo);
+                saveFileIndex();
+            }
+
+            // Some process here
+            dirFname = "";
+            dirFnamePtr = 0;
+        }else{
+            dirFname += String.fromCharCode(rbyte);
         }
     }
 
@@ -851,7 +959,7 @@ console.log("EOI: " + (byteval >> 8));
                     fnameobj.innerHTML = "No description";
                     fdescobj.value = "";
                 }else if ( (fileinfo[3]=='N') || (fileinfo[3]=='S') ) {   // Temp to deal with Secret
-//console.log("Secret");
+//console.log("Secret");updateCtrlsFromInfo(fileinfo)
                     if (fileinfo[4] == "") {
 //console.log("Secret-no fname");
                         fnameobj.innerHTML = "No description";
@@ -1156,7 +1264,9 @@ console.log("EOI: " + (byteval >> 8));
     // Get or construct file name from the file information in the index
     function getFilename(fnumstr) {
 	    var idx = findFileRecord(fnumstr);
-	    var filename = "";
+        var filename = "";
+        var desclen = fileLength - 30;
+
 	    if (idx > -1) {
 //		    if (fileIndex[idx][4] != "") {
 //                filename = fileIndex[idx][4];
@@ -1177,13 +1287,17 @@ console.log("EOI: " + (byteval >> 8));
 
 		    var fdesc = "";
 	        if ( (fileIndex[idx][3] == "") && (fileIndex[idx][4] = "") ) {
-                fdesc = "---------------";
+//                for (var i=0; i<desclength; i++){
+//                fdesc = "---------------";
+                fdesc = "";
+/*
             }else if ( (fileIndex[idx][3]=='N') || (fileIndex[idx][3]=='S') ) { // Temp to deal with secret
                 if (fileIndex[idx][4] != "") {                
                     fdesc = getFileDescription(fileIndex[idx][4]);
                 }else{
                     fdesc = "---------------";
                 }
+*/
             }else{
             	if (fileIndex[idx][3] == "") {
                 	fdesc = getFileDescription(fileIndex[idx][4]);
@@ -1195,10 +1309,14 @@ console.log("EOI: " + (byteval >> 8));
 //            var fsecret = fileIndex[idx][3];
 //            if (fsecret === 'N') fsecret = ' ';
 
-		    var fsizestr = localStorage.getItem(fnumstr).length.toString();
-
-//		    filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc + ' ' + fsecret + fsizestr.padStart(6);
-		    filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc + ' ' + fsizestr;
+            // Check if item exists in store
+		    var storfile = localStorage.getItem(fnumstr);
+            // If so get its length
+            if (storfile) {
+                var fsizestr = storfile.length.toString();
+                // Construct filename
+		        filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc.padEnd(desclen) + ' ' + fsizestr;
+            }
 	    }
 
 	    return filename;

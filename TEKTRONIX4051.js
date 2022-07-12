@@ -306,6 +306,12 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 		if( GPIB_TALK ) {
 		
 			if( (GPIB_DAV_OUT == 1) && (GPIB_NDAC_IN == 1) ) {
+
+
+                if ( GPIB_EOI_OUT == 1 ) {
+                    console.log( "EOI signalled! (" + this.printHex2(GPIB_DATA_OUT) + ")" );
+                }
+
 			
 				// Some GPIB command data for me to process.
 
@@ -382,14 +388,28 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 					        // SAVE command (storage)
 						    if ( ADDR_SECONDARY == 0x61 ) {
 
-                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) { 
+                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
 
-						            console.log("Saving to file: " + current_fnumstr);
+//						            console.log("Saving to file: " + current_fnumstr);
 								    storage.saveToTapeReady();
 
-                                } // End if SAVE
+                                } // End ADDR_PRIMARY
 
-							} // End ADDR_TAPE
+							} // End of SAVE
+
+                            // CLOSE command (storage)
+                            if (ADDR_SECONDARY == 0x62) {
+
+                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
+
+                                    console.log("Closing current file...");
+                                    storage.closeFile();
+                                    console.log("Done.");
+
+                                }   // End ADDR_PRIMARY
+
+                            }   // End of CLOSE
+
 
 							// OLD/APPEND command (storage)
 							if ( ADDR_SECONDARY == 0x64 ) {
@@ -410,23 +430,19 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 									    storage.readFromTape(current_fnumstr, 'A');
 									    if (current_fnumstr != '0') this.programLoaded();
                                     }
-								} // End ADDR_TAPE
+								} // End ADDR_PRIMARY
 
-							} // End if OLD/APPEND
-/*							
-							// BOLD command (storage)
+							} // End of OLD/APPEND
+							
+							// BSAVE comand (save binary program)
 							if ( ADDR_SECONDARY == 0x71 ) {
-								if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40) ) {
-							        if (current_fnumstr) {
-									    console.log("Reading BINARY file: " + current_fnumstr);
-//									    storage.readFromTape(current_fnumstr, 'B');
-                                        storage.readBinProg(current_fnumstr);
-									    if (current_fnumstr != '0') this.programLoaded();
-                                    }								
-								} // End  ADDR_TAPE
-								
-							} // End BOLD command
-*/							
+								if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
+
+								    storage.saveToTapeReady();
+
+                                } // End ADDR_PRIMARY
+                                
+							} // End BSAVE command
 
 						} // ADDR_PRIMARY && ADDR_SECONDARY
 
@@ -490,13 +506,11 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 							}
 						}
 
-
                         // PRINT command (storage)
                         if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6C) ) {
                             storage.printToFile(GPIB_DATA_OUT);
                             if (GPIB_DATA_OUT == '0x0D') storage.writeToFileDone();
                         }
-
 
                         // WRITE command (storage)
                         if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6F) ) {
@@ -532,6 +546,12 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 							    }
                             }
 						}
+
+                        // DIR command (send file  name)
+						if ( ADDR_SECONDARY == 0x73 ) {
+                            storage.setDirEntry(GPIB_DATA_OUT);
+                        }
+
 
 				        // FIND command (storage)
 						if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x7B) ) {
@@ -684,7 +704,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
             // Read in date and time
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_RDTIME_STATE == 2) ) {
 
-				// Send a data byte to the 4015.
+				// Send a data byte to the 4051.
 				//
 				GPIB_DATA_IN = GPIB_RDTIME.charCodeAt( GPIB_RDTIME_INDEX ) & 0x7F;
 					
@@ -709,7 +729,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
             // Read ASCII data from storage (INPUT)
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 5) ) {
 
-				// Send a data byte to the 4015.
+				// Send a data byte to the 4051.
 				//
 //console.log("INPUT sec address: " + this.printHex2(ADDR_SECONDARY));
 				if (ADDR_SECONDARY == 0x6A) {
@@ -778,7 +798,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
             // Read BINARY PROGRAM from storage
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 7) ) {
 
-				// Send a data byte to the 4015.
+				// Send a data byte to the 4051.
 				//
                 var value = storage.readBinProg() & 0xFF;
 
@@ -786,8 +806,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                     GPIB_EOI_IN = 1;   // Error - signal EOI to terminate
                 }else{
                     GPIB_DATA_IN = value & 0xFF;
-                    GPIB_EOI_IN = value & 0x0100;
-//console.log(this.printHex2(GPIB_DATA_IN));
+                    GPIB_EOI_IN = value & 0x0100;   // Is EOI bit set ?
+console.log(this.printHex2(GPIB_DATA_IN));
                 }
 					
 				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
@@ -798,7 +818,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				GPIB_DAV_IN = 1; // Signify that you have new data.
 
 
-            // Read next directory entry (TLIST) from storage (via INPUT @5,19)
+            // Read directory entry (TLIST) from storage (via INPUT @5,19)
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 8) ) {
 
 				if (ADDR_SECONDARY == 0x73) {
