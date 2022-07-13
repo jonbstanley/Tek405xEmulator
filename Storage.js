@@ -1,5 +1,5 @@
 // Tek 4051 Emulator Storage Script
-// 11-07-2022
+// 13-07-2022
 
 
 function Storage() {
@@ -147,7 +147,7 @@ function Storage() {
 
     // Clear index entries
     function clearIndexEntry(fnumstr){
-    console.log("Clearing file from index:" + fnumstr);
+//    console.log("Clearing file from index:" + fnumstr);
         if (fileIndex && fileIndex.length > 0){
             var i = 0;
             while (i < fileIndex.length) {
@@ -232,7 +232,7 @@ function Storage() {
 			    // CHECK IF FILE IS a PROGRAM!
 /*
 		        if (uploadTo4051) {
-			        console.log("Uploading to Tek...");
+//			        console.log("Uploading to Tek...");
 	                upload_to_tek(str2arraybuf(progobj.value));	// Upload the program to the emulator
 		            tek.programLoaded(); // Signal the emulator that the upload is complete
 	                uploadTo4051 = 0; // Reset flag
@@ -550,43 +550,6 @@ function Storage() {
     }
 
 
-// Obsoleted
-    this.saveToTapeBU = function(pchar) {
-	    var progobj = document.getElementById('fileViewer');
-	    if (pchar == 0x0D) {
-		    // Store CR as CR
-            binData.push(pchar);
-	    }else if (pchar < 0x20) {
-		    // Store control characters preceded with backspace+underscore and adjusted value
-            binData.push(0x10);
-            binData.push(0x5F);
-            binData.push(pchar + 0x40);
-	    }else{
-		    // Store character
-            binData.push(pchar);
-	    }
-    }
-// Obsoleted
-
-// Obsoleted
-    this.saveToTapeBS = function(pchar) {
-    //	var progobj = document.getElementById('fileViewer');
-	    //console.log(String.fromCharCode(pchar));
-	    if (pchar == 0x0D) {
-		    // Store CR as CR
-            binData.push(pchar);
-	    }else if (pchar < 0x20) {
-		    // Store control characters preceded with backslash and adjusted value
-            binData.push(0x5C);
-            binData.push(pchar+0x40);
-	    }else{
-		    // Store character
-            binData.push(pchar);
-	    }
-    }
-// Obsoleted
-
-
     this.saveToTapeBin = function(pchar) {
         binData.push(pchar);
     }
@@ -806,7 +769,7 @@ function Storage() {
 
     // CLOSE command - close the requested file
     this.closeFile = function(){
-console.log("Closing current file...");
+//console.log("Closing current file...");
 //        if (parseInt(fnumstr) > 0 && parseInt(fnumstr) < 255) {
             var filelistobj = document.getElementById('fileList');
             content = new Uint8ClampedArray();
@@ -817,51 +780,13 @@ console.log("Closing current file...");
             this.clearView();
             filelistobj.value = "";
 //        }
-console.log("Done.");
+//console.log("Done.");
     }
 
 
     // Get the name of the current file and send it to the 4051
     this.getDirEntry = function(){
         var filelistobj = document.getElementById('fileList');
-
-/*
-        if (dirFnamePtr == 0) {
-            if (dirFidx == filelistobj.length) dirFidx = 0; // Reached end of list - start at the begining
-            var idx = findFileRecord(filelistobj.options[dirFidx].value);
-            dirFidx++;
-            if (idx>-1) {
-                var fnumstr = fileIndex[idx][0];
-                if (fnumstr == "999") { // Skip over IDX record
-                    dirFidx++;
-                    idx = findFileRecord(filelistobj.options[dirFidx].value);
-                    fnumstr = fileIndex[idx][0];
-                }
-                var filename = getFilename(fnumstr);
-                if (filename.charAt(7) == 'L') dirFidx = 0;  // Reached LAST - start at the begining
-                if ( (fileIndex[1] != "N") && (fileIndex[2] != "N") ) { // Ignore NEW marked files
-//                var fileinfo = isFlashFile(filename);    
-//                if (fnumstr != "") {
-                    dirFname = filename;
-                    dirFnamePtr++;
-                    return dirFname.charCodeAt(0);
-                }
-            }
-        }else{
-            // Send byte
-            if (dirFnamePtr == dirFname.length) {
-                dirFnamePtr = 0;
-                dirFname = "";
-                return 0x0D;
-            }else{
-                dirFnamePtr++;
-                return dirFname.charCodeAt(dirFnamePtr-1);
-            }
-        }
-*/
-
-//        var idx = findFileRecord(filelistobj.options[currentFile].value);
-//        var fnumstr = fileIndex[idx][0];
         if (dirFnamePtr == 0) {
             var idx = findFileRecord(currentFile);
             var filename = "";
@@ -870,7 +795,6 @@ console.log("Done.");
             if (idx > -1) {
                 stat++;
                 // File is marked
-//                if (fileIndex[idx][1] != "") stat++; // Ignore unmarked marked files
                 if ( (fileIndex[idx][1] == "A") || (fileIndex[idx][1] == "B") ) {
                   if (fileIndex[idx][2] != "") stat++;
                 }
@@ -904,9 +828,9 @@ console.log("Done.");
 
 
     this.setDirEntry = function(rbyte){
-        console.log(String.fromCharCode(rbyte));
+//        console.log(String.fromCharCode(rbyte));
         if (rbyte == 0x0D) {
-            console.log("Filename: " + dirFname);
+//            console.log("Filename: " + dirFname);
 
             // Valid format for marked file
             if ( fileInfo = isFlashFile(dirFname)) {
@@ -1061,25 +985,6 @@ console.log("Done.");
 //        console.log("File index change: " + fileIndex);
     }
 
-/*
-    this.toggleSecret = function(){
-	    var filenumstr = getCurrentFileNum();
-	    if (filenumstr) {
-		    // Attempt to find the relevant record
-		    var idx = findFileRecord(filenumstr);
-		    // Get the type setting
-		    var secretobj = document.getElementById('fileSecret');
-		    var secret = secretobj.options[secretobj.selectedIndex].text;
-		    // If no record then create one otherwise update
-		    if (idx<0) {
-			    fileIndex.push([filenumstr,'N','N',secret,""]);
-		    }else{
-			    fileIndex[idx][3] = secret;
-		    }
-	    }
-//        console.log("File index change: " + fileIndex);
-    }
-*/
 
     // Returns the file number currently selected in the Select drop down
     function getCurrentFileNum(){
@@ -1268,11 +1173,6 @@ console.log("Done.");
         var desclen = fileLength - 30;
 
 	    if (idx > -1) {
-//		    if (fileIndex[idx][4] != "") {
-//                filename = fileIndex[idx][4];
-//                filename = updateFileSize(fnumstr, filename);
-//                return filename;
-//            }
 
 		    var fnum = fileIndex[idx][0];
 		    var ftype = "";
@@ -1287,17 +1187,7 @@ console.log("Done.");
 
 		    var fdesc = "";
 	        if ( (fileIndex[idx][3] == "") && (fileIndex[idx][4] = "") ) {
-//                for (var i=0; i<desclength; i++){
-//                fdesc = "---------------";
                 fdesc = "";
-/*
-            }else if ( (fileIndex[idx][3]=='N') || (fileIndex[idx][3]=='S') ) { // Temp to deal with secret
-                if (fileIndex[idx][4] != "") {                
-                    fdesc = getFileDescription(fileIndex[idx][4]);
-                }else{
-                    fdesc = "---------------";
-                }
-*/
             }else{
             	if (fileIndex[idx][3] == "") {
                 	fdesc = getFileDescription(fileIndex[idx][4]);
@@ -1305,9 +1195,6 @@ console.log("Done.");
                		fdesc = fileIndex[idx][3];
                	}
             }
-
-//            var fsecret = fileIndex[idx][3];
-//            if (fsecret === 'N') fsecret = ' ';
 
             // Check if item exists in store
 		    var storfile = localStorage.getItem(fnumstr);
@@ -1370,7 +1257,6 @@ console.log("Done.");
     // Limit the length of the file description
     this.fdLimit = function() {
         var ftype = document.getElementById('fileType').value;
-//        var fusage = document.getElementById('fileUsage').value;
         var desclen = fileLength - 30;
         var fdescobj = document.getElementById('fileDesc');
         var fdesc = fdescobj.value;
@@ -1416,5 +1302,5 @@ console.log("Done.");
 
 function getFnameTest(fnumstr){
 	var fname = getFilename(fnumstr);
-	console.log("Filename: " + fname);
+//	console.log("Filename: " + fname);
 }

@@ -225,7 +225,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 		this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be loaded.
 	}
 
-
+/*
 	function GPIBlog(tekobj) {
 		var flagstr = "";
 		var gpibstr = "";
@@ -262,7 +262,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 		console.log(flagstr + gpibstr);
 
 	}
-
+*/
 
     // **********************
     // ***                ***
@@ -307,11 +307,11 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 		
 			if( (GPIB_DAV_OUT == 1) && (GPIB_NDAC_IN == 1) ) {
 
-
+/*
                 if ( GPIB_EOI_OUT == 1 ) {
                     console.log( "EOI signalled! (" + this.printHex2(GPIB_DATA_OUT) + ")" );
                 }
-
+*/
 			
 				// Some GPIB command data for me to process.
 
@@ -380,8 +380,8 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
 						ADDR_SECONDARY = GPIB_DATA_OUT;
 
-						console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
-						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+//						console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
+//						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
 
 						if (ADDR_PRIMARY && ADDR_SECONDARY) {
 
@@ -402,9 +402,9 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
                                 if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
 
-                                    console.log("Closing current file...");
+//                                    console.log("Closing current file...");
                                     storage.closeFile();
-                                    console.log("Done.");
+//                                    console.log("Done.");
 
                                 }   // End ADDR_PRIMARY
 
@@ -414,19 +414,19 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 							// OLD/APPEND command (storage)
 							if ( ADDR_SECONDARY == 0x64 ) {
 
-							    console.log("Primary address = " + this.printHex2(ADDR_PRIMARY));
-							    console.log("OLD/APPEND command.");
+//							    console.log("Primary address = " + this.printHex2(ADDR_PRIMARY));
+//							    console.log("OLD/APPEND command.");
 
 							    if ( ADDR_PRIMARY == 0x41 ) {	// GPIB primary address = MTA1
 
-							        console.log("Reset index on loaded file.");
+//							        console.log("Reset index on loaded file.");
 									this.programLoaded();
 
 								} // End ADDR_PRIMARY == 0x01
 
                                 if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40) ) {
 							        if (current_fnumstr) {
-									    console.log("Reading ASCII file: " + current_fnumstr);
+//									    console.log("Reading ASCII file: " + current_fnumstr);
 									    storage.readFromTape(current_fnumstr, 'A');
 									    if (current_fnumstr != '0') this.programLoaded();
                                     }
@@ -807,7 +807,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                 }else{
                     GPIB_DATA_IN = value & 0xFF;
                     GPIB_EOI_IN = value & 0x0100;   // Is EOI bit set ?
-console.log(this.printHex2(GPIB_DATA_IN));
+//console.log(this.printHex2(GPIB_DATA_IN));
                 }
 					
 				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
