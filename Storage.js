@@ -246,10 +246,15 @@ function Storage() {
 
 
     // Update the viewer window
-    function displayInViewer(){
+    function displayInViewer(fnumstr){
         var viewerobj = document.getElementById('fileViewer');
         // Clear current content
         viewerobj.value = "";
+        // If fnumstr specified then get file content
+        if (fnumstr && fnumstr != "") {
+			var filedata = localStorage.getItem(fnumstr);
+            content = str2uint8Array(filedata);
+	    }
         // Upload new content
         if (content && content.length > 0) {
             for (var i=0; i<content.length; i++){
@@ -491,10 +496,13 @@ function Storage() {
     // Show the storage window
     this.showStorageOptions = function(){
         var storage = document.getElementById('storage');
-        var idx = "0";
-	    clearFileList();
-	    updateFileList();
-        loadFileIndex();
+        if (currentFile == "") {
+	        clearFileList();
+	        updateFileList();
+            loadFileIndex();
+        }else{
+			displayInViewer(currentFile);
+	    }
         storage.style.display="block";
     }
 
@@ -509,7 +517,6 @@ function Storage() {
         }
         return tempArray;
     }
-
 
     // Handler to upload program to the Tek emulator
     this.readFromTape = function(idx,type) {
@@ -590,14 +597,23 @@ function Storage() {
                 if (binDataPtr == 0) binData = [];
                 binData.push(byte);
                 binDataPtr++;
-                // Change type NEW to type ASCII
-                if ( (ftype == "") || (ftype == 'N') ) {
-                    fileIndex[idx][1] = 'A';
-                    fileIndex[idx][2] = 'D';
-                    saveFileIndex();
-                    updateCtrlsFromRecord(currentFile);
-                }
             }
+        }
+    }
+
+
+    // Print sequence ended with CR. Save the file to storage.
+    this.printToFileDone = function(){
+		var idx = findFileRecord(currentFile);
+		var ftype = fileIndex[idx][1];
+        content = Uint8ClampedArray.from(binData);
+        localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
+        // Change type NEW to type ASCII
+        if ( (ftype == "") || (ftype == 'N') ) {
+            fileIndex[idx][1] = 'A';
+            fileIndex[idx][2] = 'D';
+            saveFileIndex();
+            updateCtrlsFromRecord(currentFile);
         }
     }
 
@@ -615,23 +631,24 @@ function Storage() {
                 if (binDataPtr == 0) binData = [];
                 binData.push(byte);
                 binDataPtr++;
-                // Change type NEW to type ASCII
-                if ( (ftype == "") || (ftype == 'N') ) {
-                    fileIndex[idx][1] = 'B';
-                    fileIndex[idx][2] = 'D';
-                    saveFileIndex();
-                    updateCtrlsFromRecord(currentFile);                
-                }
             }
         }
     }
 
 
-
-    // Character sequence ended with CR. Save the file to storage.
+    // Write sequence ended. Save the file to storage.
     this.writeToFileDone = function(){
+		var idx = findFileRecord(currentFile);
+		var ftype = fileIndex[idx][1];
         content = Uint8ClampedArray.from(binData);
         localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
+        // Change type NEW to type BINARY
+        if ( (ftype == "") || (ftype == 'N') ) {
+            fileIndex[idx][1] = 'B';
+            fileIndex[idx][2] = 'D';
+            saveFileIndex();
+            updateCtrlsFromRecord(currentFile);                
+        }
     }
 
 
@@ -639,8 +656,10 @@ function Storage() {
     this.inputFromFile = function(){
         var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
+//console.log("File type: " + ftype);
+//console.log("Pointer: " + binDataPtr);
+//console.log("Data length: " + binData.length);
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
-        // This will make a NEW or unassigned file ASCII DATA
         if (ftype == 'A') {
             if (binDataPtr < binData.length){
                 var byte = binData[binDataPtr];
@@ -758,8 +777,8 @@ function Storage() {
             copycnt = 0;
             selectCurrentFile(fnumstr);
             var ftype = document.getElementById('fileType').value;
-            if (ftype == 'B' && content && content.length) {
-                binData = Array.from(content);
+            if (ftype == 'A' || ftype == 'B') {
+                if (content && content.length) binData = Array.from(content);
             }else{
                 binData = [];
             }

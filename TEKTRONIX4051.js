@@ -509,7 +509,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                         // PRINT command (storage)
                         if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6C) ) {
                             storage.printToFile(GPIB_DATA_OUT);
-                            if (GPIB_DATA_OUT == '0x0D') storage.writeToFileDone();
+                            if (GPIB_DATA_OUT == '0x0D') storage.printToFileDone();
                         }
 
                         // WRITE command (storage)
