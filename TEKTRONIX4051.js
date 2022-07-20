@@ -1609,7 +1609,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 		key_interval = setInterval( keyboardInterrupt, 10 ); // 100 intervals per second
         dvst_emulate_interval = setInterval( display.dvst_emulate, 100 );
         // Deassert DRBUSY-O bit active low so display is ready immediately for CPU to use
-        PIA_U565_IRA = 0x04;
+        PIA_U565_IRA |= 0x04;
     }
 
 /* Original keyCode version
@@ -1642,8 +1642,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
-//		clearInterval( key_interval );
-		clearInterval( keyboardInterrupt );
+		clearInterval( key_interval );
         clearInterval( dvst_emulate_interval );
     }
     

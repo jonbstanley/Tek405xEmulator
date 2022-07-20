@@ -640,6 +640,7 @@ function Storage() {
     this.inputFromFile = function(){
         var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
+console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
         // This will make a NEW or unassigned file ASCII DATA
         if (ftype == 'A') {
@@ -758,11 +759,15 @@ function Storage() {
             binDataPtr = 0;
             copycnt = 0;
             selectCurrentFile(fnumstr);
-            var ftype = document.getElementById('fileType').value;
-            if (ftype == 'B' && content && content.length) {
-                binData = Array.from(content);
-            }else{
-                binData = [];
+            // File exists and has some content?
+            if (content && content.length) {
+                var ftype = document.getElementById('fileType').value;
+                // File type is ASCII or BINARY program or data (NOT NEW, LAST or unmarked)
+                if ( (ftype == 'A') || (ftype == 'B') ) {
+                    binData = Array.from(content);
+                }else{
+                    binData = [];
+                }
             }
         }
     }
