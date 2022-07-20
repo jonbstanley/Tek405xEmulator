@@ -654,7 +654,7 @@ console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
     }
 
 
-    // COPY data from drawing file
+    // COPY/INPUT data from a file
     this.copyFromFile = function(){
         var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
@@ -759,15 +759,19 @@ console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
             binDataPtr = 0;
             copycnt = 0;
             selectCurrentFile(fnumstr);
-            // File exists and has some content?
-            if (content && content.length) {
-                var ftype = document.getElementById('fileType').value;
+            // File type?
+            var ftype = document.getElementById('fileType').value;
+            // If file is marked and has content then load it
+            if (content && content.length>0) {             
                 // File type is ASCII or BINARY program or data (NOT NEW, LAST or unmarked)
-                if ( (ftype == 'A') || (ftype == 'B') ) {
+//                if ( (ftype == 'A') || (ftype == 'B') ) {
                     binData = Array.from(content);
-                }else{
-                    binData = [];
-                }
+//                }else{
+//                    binData = [];
+//                }
+            }else{
+                // Create an empty array
+                binData = [];
             }
         }
     }
@@ -1219,15 +1223,13 @@ console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
                		fdesc = fileIndex[idx][3];
                	}
             }
-
-            // Check if item exists in store
+            var fsizestr = 0;
+            // Check if item has content in store
 		    var storfile = localStorage.getItem(fnumstr);
-            // If so get its length
-            if (storfile) {
-                var fsizestr = storfile.length.toString();
-                // Construct filename
-		        filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc.padEnd(desclen) + ' ' + fsizestr;
-            }
+            // If so get the content length
+            if (storfile) fsizestr = storfile.length.toString();
+            // Construct filename
+            filename = fnum.padEnd(7) + ftype.padEnd(8) + fusage.padEnd(5) + fdesc.padEnd(desclen) + ' ' + fsizestr;
 	    }
 
 	    return filename;

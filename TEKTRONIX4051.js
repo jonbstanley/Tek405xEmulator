@@ -595,7 +595,7 @@ var ctx;
 
                 if ( ADDR_PRIMARY && ADDR_SECONDARY) {
 
-                    // DIR command (Emulator does not support direcories. This simply returns '/root'/)
+                    // PWD command (Emulator does not support direcories. This simply returns '/root'/)
                     if ( ADDR_SECONDARY == 0x69 ) {
 
                         if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
@@ -741,8 +741,7 @@ var ctx;
             // Read ASCII data from storage (INPUT)
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 5) ) {
 
-				// Send a data byte to the 4051.
-				//
+                
 //console.log("INPUT sec address: " + this.printHex2(ADDR_SECONDARY));
 				if (ADDR_SECONDARY == 0x6A) {
                     var value = storage.copyFromFile();
@@ -776,8 +775,7 @@ var ctx;
             // Read BINARY data from storage (READ)
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 6) ) {
 
-				// Send a data byte to the 4051.
-				//
+				// Read a data byte from the 4051.
 				GPIB_DATA_IN = storage.readFromFile();
 
 //console.log(this.printHex2(GPIB_DATA_IN));
