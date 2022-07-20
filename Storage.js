@@ -1283,13 +1283,19 @@ console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
     // Limit the length of the file description
     this.fdLimit = function() {
         var ftype = document.getElementById('fileType').value;
-        var desclen = fileLength - 30;
         var fdescobj = document.getElementById('fileDesc');
-        var fdesc = fdescobj.value;
-        if ( (ftype=='N') || (ftype=='L') ) {
+
+        if ( (ftype=='') || (ftype=='L') ) {
             fdescobj.value = "";    // Can't name a LAST or NEW file
-        }else{        
-            if (fdesc.length > desclen) fdescobj.value = fdesc.substr(0, desclen);
+            return true;
+        }
+
+        var desclen = fileLength - 30;
+        var fdesc = fdescobj.value;
+
+        if (fdesc.length >= desclen) {
+            fdesc = fdesc.substr(0, desclen);
+            fdescobj.value = fdesc;
         }
     }
 
