@@ -1,5 +1,5 @@
 // Tek 4051 Emulator Storage Script
-// 13-07-2022
+// 20-07-2022
 
 
 function Storage() {
@@ -19,6 +19,7 @@ function Storage() {
     var dirFnamePtr = 0;
     var fileLength = 46;    // Including CR and NULL
     var filesPerDirectory = 255;
+    var directoryName = "/root/";
     var padcnt = 0;
     
     const fileTypes = [
@@ -246,15 +247,10 @@ function Storage() {
 
 
     // Update the viewer window
-    function displayInViewer(fnumstr){
+    function displayInViewer(){
         var viewerobj = document.getElementById('fileViewer');
         // Clear current content
         viewerobj.value = "";
-        // If fnumstr specified then get file content
-        if (fnumstr && fnumstr != "") {
-			var filedata = localStorage.getItem(fnumstr);
-            content = str2uint8Array(filedata);
-	    }
         // Upload new content
         if (content && content.length > 0) {
             for (var i=0; i<content.length; i++){
@@ -496,13 +492,10 @@ function Storage() {
     // Show the storage window
     this.showStorageOptions = function(){
         var storage = document.getElementById('storage');
-        if (currentFile == "") {
-	        clearFileList();
-	        updateFileList();
-            loadFileIndex();
-        }else{
-			displayInViewer(currentFile);
-	    }
+        var idx = "0";
+	    clearFileList();
+	    updateFileList();
+        loadFileIndex();
         storage.style.display="block";
     }
 
@@ -517,6 +510,7 @@ function Storage() {
         }
         return tempArray;
     }
+
 
     // Handler to upload program to the Tek emulator
     this.readFromTape = function(idx,type) {
@@ -597,23 +591,14 @@ function Storage() {
                 if (binDataPtr == 0) binData = [];
                 binData.push(byte);
                 binDataPtr++;
+                // Change type NEW to type ASCII
+                if ( (ftype == "") || (ftype == 'N') ) {
+                    fileIndex[idx][1] = 'A';
+                    fileIndex[idx][2] = 'D';
+                    saveFileIndex();
+                    updateCtrlsFromRecord(currentFile);
+                }
             }
-        }
-    }
-
-
-    // Print sequence ended with CR. Save the file to storage.
-    this.printToFileDone = function(){
-		var idx = findFileRecord(currentFile);
-		var ftype = fileIndex[idx][1];
-        content = Uint8ClampedArray.from(binData);
-        localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
-        // Change type NEW to type ASCII
-        if ( (ftype == "") || (ftype == 'N') ) {
-            fileIndex[idx][1] = 'A';
-            fileIndex[idx][2] = 'D';
-            saveFileIndex();
-            updateCtrlsFromRecord(currentFile);
         }
     }
 
@@ -631,24 +616,23 @@ function Storage() {
                 if (binDataPtr == 0) binData = [];
                 binData.push(byte);
                 binDataPtr++;
+                // Change type NEW to type ASCII
+                if ( (ftype == "") || (ftype == 'N') ) {
+                    fileIndex[idx][1] = 'B';
+                    fileIndex[idx][2] = 'D';
+                    saveFileIndex();
+                    updateCtrlsFromRecord(currentFile);                
+                }
             }
         }
     }
 
 
-    // Write sequence ended. Save the file to storage.
+
+    // Character sequence ended with CR. Save the file to storage.
     this.writeToFileDone = function(){
-		var idx = findFileRecord(currentFile);
-		var ftype = fileIndex[idx][1];
         content = Uint8ClampedArray.from(binData);
         localStorage.setItem(currentFile, String.fromCharCode.apply(null,content));
-        // Change type NEW to type BINARY
-        if ( (ftype == "") || (ftype == 'N') ) {
-            fileIndex[idx][1] = 'B';
-            fileIndex[idx][2] = 'D';
-            saveFileIndex();
-            updateCtrlsFromRecord(currentFile);                
-        }
     }
 
 
@@ -656,10 +640,8 @@ function Storage() {
     this.inputFromFile = function(){
         var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
-//console.log("File type: " + ftype);
-//console.log("Pointer: " + binDataPtr);
-//console.log("Data length: " + binData.length);
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
+        // This will make a NEW or unassigned file ASCII DATA
         if (ftype == 'A') {
             if (binDataPtr < binData.length){
                 var byte = binData[binDataPtr];
@@ -777,8 +759,8 @@ function Storage() {
             copycnt = 0;
             selectCurrentFile(fnumstr);
             var ftype = document.getElementById('fileType').value;
-            if (ftype == 'A' || ftype == 'B') {
-                if (content && content.length) binData = Array.from(content);
+            if (ftype == 'B' && content && content.length) {
+                binData = Array.from(content);
             }else{
                 binData = [];
             }
@@ -800,6 +782,21 @@ function Storage() {
             filelistobj.value = "";
 //        }
 //console.log("Done.");
+    }
+
+
+    // Return the current directory
+    this.getDirectory = function() {
+        if (dirFnamePtr == directoryName.length) {
+            // Reset pointer to beggining of string, send CR
+            dirFnamePtr = 0;
+            dirFname = "";
+            return 0x0D;
+        }else{
+            // Send byte
+            dirFnamePtr++;
+            return directoryName.charCodeAt(dirFnamePtr-1);
+        }
     }
 
 
@@ -825,20 +822,23 @@ function Storage() {
                 if (filename != "") stat++;
             }
             if (stat == 3) {
+                // Valid filename
                 dirFname = filename;
                 dirFnamePtr++;
                 return dirFname.charCodeAt(0);
             }else{
+                // No filename - null return
                 dirFnamePtr = 0;
                 return 0xFF;            
             }
         }else{
-            // Send byte
             if (dirFnamePtr == dirFname.length) {
+                // Reset pointer to beggining of string, send CR
                 dirFnamePtr = 0;
                 dirFname = "";
                 return 0x0D;
             }else{
+                // Send byte
                 dirFnamePtr++;
                 return dirFname.charCodeAt(dirFnamePtr-1);
             }

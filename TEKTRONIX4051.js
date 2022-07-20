@@ -24,7 +24,7 @@
  */
 
 
-function TEKTRONIX4051( windowObj, canvasObj ) {
+function TEKTRONIX4051( windowObj, canvasObj, audioOn ) {
 	
 	// Hardware components
     var display = new TekDisplay(this, canvasObj);
@@ -34,6 +34,9 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 	var ram = new Array(32*1024);
     var romexp = new ROMexp;
     var storage = new Storage();
+
+var osc;
+var ctx;
 
     // MC6820 PIA notation
     //  * CRA = Control Register A
@@ -509,7 +512,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                         // PRINT command (storage)
                         if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6C) ) {
                             storage.printToFile(GPIB_DATA_OUT);
-                            if (GPIB_DATA_OUT == '0x0D') storage.printToFileDone();
+                            if (GPIB_DATA_OUT == '0x0D') storage.writeToFileDone();
                         }
 
                         // WRITE command (storage)
@@ -592,12 +595,21 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
                 if ( ADDR_PRIMARY && ADDR_SECONDARY) {
 
-                    // INPUT command (storage)
-                    if ( (ADDR_SECONDARY == 0x6A ) || (ADDR_SECONDARY == 0x6D) ) {
-//                    if (ADDR_SECONDARY == 0x6D ) {
+                    // DIR command (Emulator does not support direcories. This simply returns '/root'/)
+                    if ( ADDR_SECONDARY == 0x69 ) {
 
                         if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
-                            GPIB_STATE = 5; // Signal we are ready to read ASCII DAA
+                            GPIB_STATE = 9; // Signal we are ready to read the directory name
+                        }
+
+                    }   // End of DIR command
+
+
+                    // INPUT command (storage)
+                    if ( (ADDR_SECONDARY == 0x6A ) || (ADDR_SECONDARY == 0x6D) ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 5; // Signal we are ready to read ASCII data
                         }
 
                     } // End of INPUT command
@@ -621,7 +633,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 
                     } // End of BOLD command
 
-                    // DIR/TLIST command (storage)
+                    // TLIST command (storage)
                     if ( ADDR_SECONDARY == 0x73 ) {
 
                         if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
@@ -711,7 +723,7 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 				// Is this the 'last' character?
 				//	
 				if( GPIB_RDTIME_INDEX == (GPIB_RDTIME.length - 1) ) GPIB_EOI_IN = 1;
-				else                                                          GPIB_EOI_IN = 0;
+				else                                                     GPIB_EOI_IN = 0;
 				
 				// Bump the index.
 				//
@@ -739,18 +751,22 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 //console.log("Data: " + this.printHex2(GPIB_DATA_IN));
 //console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
 			        // Is this the 'last' character?
-                    if (GPIB_DATA_IN == 0x80) GPIB_EOI_IN = 1;
-				    else                                GPIB_EOI_IN = 0;
+                    if (GPIB_DATA_IN == 0x80) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
                 }
 
 				if (ADDR_SECONDARY == 0x6D) {
                     GPIB_DATA_IN = storage.inputFromFile();
 				    // Is this the 'last' character?
-                    if (GPIB_DATA_IN == 0x0D) GPIB_EOI_IN = 1;
-				    else                                GPIB_EOI_IN = 0;
+                    if (GPIB_DATA_IN == 0x0D) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
                 }
-					
-				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
 					
 				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
 				
@@ -788,8 +804,6 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                     GPIB_EOI_IN = 0;
                 }
 
-				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
-					
 				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
@@ -810,8 +824,6 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
 //console.log(this.printHex2(GPIB_DATA_IN));
                 }
 					
-				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
-					
 				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 3;
 
                 // Possibly GPIB_STATE = 3 - program loaded
@@ -825,16 +837,37 @@ function TEKTRONIX4051( windowObj, canvasObj ) {
                     GPIB_DATA_IN = storage.getDirEntry();
 //console.log(this.printHex2(GPIB_DATA_IN));
 				    // Is this the 'last' character?
-                    if (GPIB_DATA_IN == 0x0D) GPIB_EOI_IN = 1;
-				    else                                GPIB_EOI_IN = 0;
+                    if (GPIB_DATA_IN == 0x0D) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
                 }
-					
-				//@@@ if( GPIB_EOI_IN == 1 ) { this.print('POLL_GPIB: RDTIME_EOI set with DATA=0x'); this.printHex2( GPIB_DATA_IN ); this.println(''); }
 					
 				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
 
+
+            // Read the directory name from storage (via INPUT @5,9)
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 9) ) {
+
+				if (ADDR_SECONDARY == 0x69) {
+                    GPIB_DATA_IN = storage.getDirectory();
+//console.log(this.printHex2(GPIB_DATA_IN));
+				    // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x0D) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
+                }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+				
 			} else if( (GPIB_NDAC_OUT == 1) && (GPIB_DAV_IN == 1) ) {
 
 				GPIB_DAV_IN = 0; // Clear the data available flag.
@@ -1281,11 +1314,19 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 								break;
 								
 				case 0x87AA : 	if( PIA_U461_CRB & 0x04 ) {
-									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;
-									var npb7 = (value             >>> 7) & 0x01;
-									if( opb7 != npb7 ) {
+									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;     // Last bit of previous value
+									var npb7 = (value        >>> 7) & 0x01;     // Last bit of current value
+									if( opb7 != npb7 ) {    // If its changed since last iteration
 										if (audioOn) beep.play(); // This works - but not too well!
 									} // End if.
+/*
+                                    var spb7 = (value >>> 7) & 1;
+                                    if (spb7 == 1) {
+                                        startOsc();
+                                    }else{
+                                        stopOsc();
+                                    }
+*/
 									PIA_U461_ORB = value;
 									GPIB_EOI_OUT = (PIA_U461_ORB >>> 4) & 0x01;
 									GPIB_REN_OUT = (PIA_U461_ORB >>> 7) & 0x01;
@@ -1527,7 +1568,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 //		(this.KBD_SHIFT_0 & 0x01) ? (PIA_U461_IRB |= 0x01) : (PIA_U461_IRB &= ~0x01);
 
 		// Set CapsLock and key value
-		PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F);
+		PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F) ;
 		if (audioOn) click.play(); // This works - but not too well!
 	}
 
@@ -1602,7 +1643,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
     this.execute_stop = function() {
 		clearInterval( exec_interval );
 //		clearInterval( key_interval );
-//		clearInterval( keyboardInterrupt );
+		clearInterval( keyboardInterrupt );
         clearInterval( dvst_emulate_interval );
     }
     
@@ -1645,6 +1686,27 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
     {
 	    this.execute_reset();
     } // End of local constructor.
+
+
+function startOsc(){
+    if (audioOn) {
+//        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        ctx = new AudioContext();
+        osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = 261.63;
+        osc.start(0);
+        osc.connect(ctx.destination);
+    }
+}
+
+
+function stopOsc(){
+    if (audioOn) {
+        osc.stop(0);
+    }
+}
+
 
 } // End of function TEKTRONIX4051.
 
