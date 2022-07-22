@@ -8,7 +8,7 @@ https://github.com/jonbstanley/Tek405xEmulator
 
 ---
 
-For details of releases and what is new see <a href="https://github.com/Twilight-Logic/Tek405xEmulator/blob/master/Releases.md">Releases.md</a>.
+For details of releases including bug fixes and what is new see <a href="https://github.com/Twilight-Logic/Tek405xEmulator/blob/master/Releases.md">Releases.md</a>.
 
 ---
 
@@ -22,7 +22,7 @@ Previous:
 
  - Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
 
-I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file      AND the 4051, 4052, 4052A and 4054A computers.
+I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file AND the 4051, 4052, 4052A and 4054A computers.
 
 For the older programs from the Programs directory, and my older programs on the 4050 Program repository that have Character, backspace, underline - execute the older HTML file
 
