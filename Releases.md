@@ -1,7 +1,6 @@
 <B>Updates by Twilight Logic</B>
 
 
-
 Update 22 Jul 2022
   - bug fix: Fixed isse where the index was not getting cleared after a DelAll
   - bug fix: Fixed Firefox issue where Delete would cause the display to "freeze"
