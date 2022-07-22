@@ -225,13 +225,40 @@
 var tek;
 var storage = new Storage();
 var audioOn = true;
+//var osc;
+//var ctx;
+
+
+function startCtx(){
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    ctx = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = 261.63;
+}
+
+
+function stopCtx(){
+    ctx = "";
+}
+
+function startOsc(){
+    if (ctx) {
+        osc.start(0);
+        osc.connect(ctx.destination);
+    }
+}
+
+
+function stopOsc(){
+    osc.stop(0);
+}
 
 
 function tek_init() {
 
     var canvas    = document.getElementById('screen');
     
-    tek = new TEKTRONIX4051( window, canvas);
+    tek = new TEKTRONIX4051( window, canvas, audioOn);
     
 } // End of function tek_init.
 
@@ -320,13 +347,33 @@ function toggleAudioStatus(){
     mutebtn = document.getElementById('mutespkr');
 	audioOn = !audioOn;
     if (audioOn) {
-        mutebtn.value = "♫ mute";        
+        mutebtn.value = "♫ mute";
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;       
     }else{
         mutebtn.value = "‼ mute";        
     }
 }
 
+/*
+function startOsc(){
+    if (audioOn) {
+//        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        ctx = new AudioContext();
+        osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = 261.63;
+        osc.start(0);
+        osc.connect(ctx.destination);
+    }
+}
 
+
+function stopOsc(){
+    if (audioOn) {
+        osc.stop(0);
+    }
+}
+*/
 </script>
 
 

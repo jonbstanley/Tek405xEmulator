@@ -24,7 +24,7 @@
  */
 
 
-function TEKTRONIX4051( windowObj, canvasObj, audioOn ) {
+function TEKTRONIX4051( windowObj, canvasObj ) {
 	
 	// Hardware components
     var display = new TekDisplay(this, canvasObj);
@@ -34,7 +34,6 @@ function TEKTRONIX4051( windowObj, canvasObj, audioOn ) {
 	var ram = new Array(32*1024);
     var romexp = new ROMexp;
     var storage = new Storage();
-
 var osc;
 var ctx;
 
@@ -145,6 +144,8 @@ var ctx;
 	var beep = new Audio( "beep.mp3" );
 	
 	var click = new Audio( "click.mp3" );
+	
+	this.audioOn = true;
 
     // Random number generator mod
     var RND_KC_BODGE0 = 0;
@@ -1315,7 +1316,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;     // Last bit of previous value
 									var npb7 = (value        >>> 7) & 0x01;     // Last bit of current value
 									if( opb7 != npb7 ) {    // If its changed since last iteration
-										if (audioOn) beep.play(); // This works - but not too well!
+										if (this.audioOn) beep.play(); // This works - but not too well!
 									} // End if.
 /*
                                     var spb7 = (value >>> 7) & 1;
@@ -1550,7 +1551,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
         switch( type ) {
 			case 'PRESS' :
 			    PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F);
-			    if (audioOn) click.play(); // This works - but not too well!
+			    if (this.audioOn) click.play(); // This works - but not too well!
 			    break;
 			case 'RELEASE' :
 		        PIA_U461_IRA  = 0x80 | (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
@@ -1567,7 +1568,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 
 		// Set CapsLock and key value
 		PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F) ;
-		if (audioOn) click.play(); // This works - but not too well!
+		if (this.audioOn) click.play(); // This works - but not too well!
 	}
 
 
@@ -1686,7 +1687,7 @@ console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 
 
 function startOsc(){
-    if (audioOn) {
+    if (this.audioOn) {
 //        window.AudioContext = window.AudioContext || window.webkitAudioContext;
         ctx = new AudioContext();
         osc = ctx.createOscillator();
@@ -1699,7 +1700,7 @@ function startOsc(){
 
 
 function stopOsc(){
-    if (audioOn) {
+    if (this.audioOn) {
         osc.stop(0);
     }
 }

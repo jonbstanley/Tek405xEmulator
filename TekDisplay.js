@@ -6,9 +6,8 @@ function TekDisplay(hw, canvas) {
 	var width = canvas.width;
 	var height = canvas.height;
 
-console.log("Width: " + width);
-console.log("Height: " + height);
-	
+// console.log(canvas.height + "," + canvas.width);
+
 	var X_DA = 0;
 	var Y_DA = 0;
 	
@@ -107,36 +106,37 @@ console.log("Height: " + height);
 	} // End of function VECTOR.
 
 
+    // xpos, ypos = tektronix display co-ordinates
     // Added psize to indicate the pixel size (values 1=1x1 or 2=2x2)
     // to solve a FF rendering problem when 'Delete' key is pressed
 	function setPixel( xpos, ypos, type, pxsize ) {
-//if (adotpending) console.log("x: " + xpos + "  y: " + ypos);
 
         if (pxsize < 1) pxsize = 1;
 
-		my = height - ypos; // Convert to 'canvas' coordinates from Tektronix coordinates.
+//		my = height - ypos; // Convert to 'canvas' coordinates from Tektronix coordinates.
+        cypos = height - (ypos+1);  // Both have Zero base. Offset of 1 down required when converting.
   
 		switch( type ) {
 			case 'ERASE' :
-		 		setPixelRGB( xpos, my, 0, 0, 0, pxsize ); // BLACK
+		 		setPixelRGB( xpos, cypos, 0, 0, 0, pxsize ); // BLACK
 				break;
 			case 'SOT' : // cursor refresh dot
 				// Do not replace pixel if it already has been stored!
-				if(canvasctx.getImageData(xpos, my, 1, 1).data[1] != pixel_store_inten) {
-				    setPixelRGB( xpos, my, 0, pixel_cursor_inten, 0, pxsize ); // DARK GREEN
+				if(canvasctx.getImageData(xpos, cypos, 1, 1).data[1] != pixel_store_inten) {
+				    setPixelRGB( xpos, cypos, 0, pixel_cursor_inten, 0, pxsize ); // DARK GREEN
 				}
 				break;
 			case 'RVECTOR' : // vector refresh dot  -- added by mcm for refresh vector support
 				// Do not replace pixel if it already has been stored!
 				if(canvasctx.getImageData(xpos, my, 1, 1).data[1] != pixel_store_inten) {
-				    setPixelRGB( xpos, my, 0, pixel_cursor_inten, 0, pxsize ); // DARK GREEN
+				    setPixelRGB( xpos, cypos, 0, pixel_cursor_inten, 0, pxsize ); // DARK GREEN
 				}
 				break;
 			case 'ADOT' : // stored character dot
-				setPixelRGB( xpos, my, 0, pixel_store_inten, 0, pxsize ); // BRIGHT GREEN
+				setPixelRGB( xpos, cypos, 0, pixel_store_inten, 0, pxsize ); // BRIGHT GREEN
 				break;
 			case 'VECTOR' :
-				setPixelRGB( xpos, my, 0, pixel_store_inten, 0, pxsize ); // BRIGHT GREEN
+				setPixelRGB( xpos, cypos, 0, pixel_store_inten, 0, pxsize ); // BRIGHT GREEN
 				break;
 			default :
 				break;
@@ -145,9 +145,10 @@ console.log("Height: " + height);
 
 
     // Draws a "pixel"
-	function setPixelRGB( xpos, ypos, r, g, b, pxsize ) {
+    // cxpos,cypos = canvas co-ordinates
+	function setPixelRGB( cxpos, cypos, r, g, b, pxsize ) {
 		canvasctx.fillStyle = "rgb("+r+","+g+","+b+")";
-		canvasctx.fillRect( xpos, ypos, pxsize, pxsize );
+		canvasctx.fillRect( cxpos, cypos, pxsize, pxsize );
 	}
     
    
@@ -210,26 +211,21 @@ console.log("Height: " + height);
 				// double width and double height of character pixels
 				// 4 setPixel calls to interpolate between pixels for continuous font appearance
 /*
-				setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + (2*Y_CHAR), 'ADOT' );
-				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + (2*Y_CHAR), 'ADOT' );
-    			setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + ((2*Y_CHAR)-1), 'ADOT' );
-				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + ((2*Y_CHAR)-1), 'ADOT' );
+				setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + (2*Y_CHAR), 'ADOT', 1 );
+				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + (2*Y_CHAR), 'ADOT', 1 );
+    			setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + ((2*Y_CHAR)-1), 'ADOT', 1 );
+				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + ((2*Y_CHAR)-1), 'ADOT', 1 );
 */
-
-                // FF had a problem with 'Delete' which draws a full block
-                // Changing the setPixelRGM function to draw a pixel 2x2 in size
-                // in one operation seems to have resolved this problem although
-                // its still a bit 'sticky'
                 setPixel ( X_DA + (2*X_CHAR), Y_DA + (2*Y_CHAR), 'ADOT', 2 );
 			} else {
 			    // setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'SOT');
 				// double width and double height of cursor pixels
 				// 2 setPixel calls instead of 4 because it's pixelated like on actual machine
-				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + (2*Y_CHAR), 'SOT', 1 );
-				setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + ((2*Y_CHAR)-1), 'SOT', 1 );
+//				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR, 'SOT', 1 );
+//				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR-1, 'SOT', 1 );
 
-//                setPixel ( X_DA + (2*X_CHAR), Y_DA + (2*Y_CHAR), 'ADOT', 2 );
-
+				setPixel( X_DA + (2*X_CHAR), Y_DA + (2*Y_CHAR), 'SOT', 1 );
+				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + ((2*Y_CHAR)+1), 'SOT', 1 );
 
 			}
 			adotpending = false;

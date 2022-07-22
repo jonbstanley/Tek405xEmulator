@@ -186,9 +186,9 @@ function Storage() {
             // Clear storage
             localStorage.clear();
             // Clear file select control (file list)
-            clearFileList()
+            clearFileList();
             // Clear file index
-            listIndex = [];
+            fileIndex = [];
         }
     }
 
@@ -640,7 +640,7 @@ function Storage() {
     this.inputFromFile = function(){
         var idx = findFileRecord(currentFile);
         var ftype = fileIndex[idx][1];
-console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
+//console.log("Fnum: " + currentFile + "  IDX: " + idx + "  Ftype: " + ftype);
         // Read a byte only from files of type ASCII (ASCII data, prog, log or text), or unassigned
         // This will make a NEW or unassigned file ASCII DATA
         if (ftype == 'A') {
