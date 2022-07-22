@@ -1,17 +1,38 @@
 <B>Updates by Twilight Logic</B>
 
+
+
+Update 22 Jul 2022
+  - bug fix: Fixed isse where the index was not getting cleared after a DelAll
+  - bug fix: Fixed Firefox issue where Delete would cause the display to "freeze"
+
+Update 20 Jul 2022
+  - bug fix. Fixed problem with INPUT@5,19:A$ not returning a filename when file is empty
+  - improved description field handling during edit
+  - feature request: added secondary command 9. INPUT@5,9:A$ now returns a directory name of 'root'
+
+update 15/07/2022
+  - restored "MUSIC" call in FastGraphics ROM back to "MUZAKT" for compatibility with MaxiROM
+
+Update 12/07/2022
+  - bug fix: fixed problem with description field not getting padded when file name is generated
+  - replaced hyphens to indicate empty character positions with space in filename display
+
+Update 23/06/2022
+  - added feature: added CLOSE command to Storage functions for compatibility. Some BASIC programs hung on encountering a CLOSE being sent to Storage over GPIB.
+
 Update 28 Jan 2022
 
-  - bug fix. File informaton was not getting displayed or saved during import of Flash drive files
+  - bug fix: File informaton was not getting displayed or saved during import of Flash drive files
 
 Update 11 Jan 2022
 
-  - bug fix. File information set by the user was not getting saved when a new file was added to storage.
+  - bug fix: File information set by the user was not getting saved when a new file was added to storage.
 
 Update 02 Dec 2021
 
-  - added ability to edit description field
-  - added support for dir command (secondary address 19)
+  - feature request: added ability to edit description field
+  - feature request: added support for dir command (secondary address 19)
   - miscellaneous bug fixes
   - removed support for 'Secret'
 
