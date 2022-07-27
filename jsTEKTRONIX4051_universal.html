@@ -224,7 +224,7 @@
 
 var tek;
 var storage = new Storage();
-var audioOn = true;
+//var audioOn = true;
 //var osc;
 //var ctx;
 
@@ -258,7 +258,7 @@ function tek_init() {
 
     var canvas    = document.getElementById('screen');
     
-    tek = new TEKTRONIX4051( window, canvas, audioOn);
+    tek = new TEKTRONIX4051( window, canvas );
     
 } // End of function tek_init.
 
@@ -345,8 +345,8 @@ function upload_to_tek_fail() {
 
 function toggleAudioStatus(){
     mutebtn = document.getElementById('mutespkr');
-	audioOn = !audioOn;
-    if (audioOn) {
+	tek.audioOn = !tek.audioOn;
+    if (tek.audioOn) {
         mutebtn.value = "♫ mute";
         window.AudioContext = window.AudioContext || window.webkitAudioContext;       
     }else{
@@ -356,7 +356,7 @@ function toggleAudioStatus(){
 
 /*
 function startOsc(){
-    if (audioOn) {
+    if (tek.audioOn) {
 //        window.AudioContext = window.AudioContext || window.webkitAudioContext;
         ctx = new AudioContext();
         osc = ctx.createOscillator();
@@ -369,7 +369,7 @@ function startOsc(){
 
 
 function stopOsc(){
-    if (audioOn) {
+    if (tek.audioOn) {
         osc.stop(0);
     }
 }
