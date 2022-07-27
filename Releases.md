@@ -1,12 +1,14 @@
 <B>Updates by Twilight Logic</B>
 
+Update 27 Jul 2022
+  - bug fix: fixed problem with mute button not working
 
 Update 22 Jul 2022
-  - bug fix: Fixed isse where the index was not getting cleared after a DelAll
+  - bug fix: fixed isse where the index was not getting cleared after a DelAll
   - bug fix: Fixed Firefox issue where Delete would cause the display to "freeze"
 
 Update 20 Jul 2022
-  - bug fix. Fixed problem with INPUT@5,19:A$ not returning a filename when file is empty
+  - bug fix. fixed problem with INPUT@5,19:A$ not returning a filename when file is empty
   - improved description field handling during edit
   - feature request: added secondary command 9. INPUT@5,9:A$ now returns a directory name of 'root'
 
