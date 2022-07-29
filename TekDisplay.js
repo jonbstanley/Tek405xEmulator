@@ -5,7 +5,9 @@ function TekDisplay(hw, canvas) {
 	var canvasctx = canvas.getContext("2d");
 	var width = canvas.width;
 	var height = canvas.height;
-	
+
+// console.log(canvas.height + "," + canvas.width);
+
 	var X_DA = 0;
 	var Y_DA = 0;
 	
@@ -50,7 +52,6 @@ function TekDisplay(hw, canvas) {
     // ****************
 
 	function VECTOR( x0, y0, x1, y1 ) {
-
 		var dx = Math.abs( x1 - x0 );
 		var dy = Math.abs( y1 - y0 );
 		
@@ -64,11 +65,21 @@ function TekDisplay(hw, canvas) {
 		
 		do {
 		
-			// double vector pixel width and height
+			if (VEN_1 == 1) {
+			
+			// double vector pixel width and height for normal vectors
+/*
 			setPixel( x0+2, y0+2, 'VECTOR' );
 			setPixel( x0+1, y0+2, 'VECTOR' );
 			setPixel( x0+2, y0+1, 'VECTOR' );
 			setPixel( x0+1, y0+1, 'VECTOR' );
+*/
+                setPixel(x0, y0, 'VECTOR', 2 );
+			} else {
+			// single vector pixel width and height for refresh vectors
+//			setPixel( x0+1, y0+1, 'RVECTOR' );
+                setPixel(x0+1, y0+1, 'RVECTOR', 1 );
+			}
 			
 			if( (x0 == x1) && (y0 == y1) ) break;
 			
@@ -93,37 +104,51 @@ function TekDisplay(hw, canvas) {
 		} while( true );
 			
 	} // End of function VECTOR.
-	
-	
 
 
-	function setPixel( x, y, type ) {
-		my = height - y; // Convert to 'canvas' coordinates from Tektronix coordinates.
+    // xpos, ypos = tektronix display co-ordinates
+    // Added psize to indicate the pixel size (values 1=1x1 or 2=2x2)
+    // to solve a FF rendering problem when 'Delete' key is pressed
+	function setPixel( xpos, ypos, type, pxsize ) {
+
+        if (pxsize < 1) pxsize = 1;
+
+//		my = height - ypos; // Convert to 'canvas' coordinates from Tektronix coordinates.
+        cypos = height - (ypos+1);  // Both have Zero base. Offset of 1 down required when converting.
   
 		switch( type ) {
 			case 'ERASE' :
-		 		setPixelRGB( x, my, 0, 0, 0 ); // BLACK
+		 		setPixelRGB( xpos, cypos, 0, 0, 0, pxsize ); // BLACK
 				break;
 			case 'SOT' : // cursor refresh dot
 				// Do not replace pixel if it already has been stored!
-				if(canvasctx.getImageData(x, my, 1, 1).data[1] != pixel_store_inten) {
-				    setPixelRGB( x, my, 0, pixel_cursor_inten, 0 ); // DARK GREEN
+				if(canvasctx.getImageData(xpos, cypos, 1, 1).data[1] != pixel_store_inten) {
+				    setPixelRGB( xpos, cypos, 0, pixel_cursor_inten, 0, pxsize ); // DARK GREEN
+				}
+				break;
+			case 'RVECTOR' : // vector refresh dot  -- added by mcm for refresh vector support
+				// Do not replace pixel if it already has been stored!
+				if(canvasctx.getImageData(xpos, my, 1, 1).data[1] != pixel_store_inten) {
+				    setPixelRGB( xpos, cypos, 0, pixel_cursor_inten, 0, pxsize ); // DARK GREEN
 				}
 				break;
 			case 'ADOT' : // stored character dot
-				setPixelRGB( x, my, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
+				setPixelRGB( xpos, cypos, 0, pixel_store_inten, 0, pxsize ); // BRIGHT GREEN
 				break;
 			case 'VECTOR' :
-				setPixelRGB( x, my, 0, pixel_store_inten, 0 ); // BRIGHT GREEN
+				setPixelRGB( xpos, cypos, 0, pixel_store_inten, 0, pxsize ); // BRIGHT GREEN
 				break;
 			default :
 				break;
 		}					
 	}
 
-	function setPixelRGB( x, y, r, g, b ) {	    
+
+    // Draws a "pixel"
+    // cxpos,cypos = canvas co-ordinates
+	function setPixelRGB( cxpos, cypos, r, g, b, pxsize ) {
 		canvasctx.fillStyle = "rgb("+r+","+g+","+b+")";
-		canvasctx.fillRect( x, y, 1,1 );
+		canvasctx.fillRect( cxpos, cypos, pxsize, pxsize );
 	}
     
    
@@ -136,7 +161,6 @@ function TekDisplay(hw, canvas) {
 	var adotpending = false;
 	
 	this.SCREEN = function( type ) {
-
         //console.log("TekDisplay SCREEN");
 
         DISP_INFO = hw.getDisplayControl();
@@ -149,13 +173,14 @@ function TekDisplay(hw, canvas) {
 		
 		new_X = DISP_INFO[4] + screen_x_offset;
 		new_Y = DISP_INFO[5] + screen_y_offset;
-			
-		if( type == 'BUFCLK' ) {
+
+		if ( type == 'BUFCLK' ) {
 		
 			var old_X = X_DA;
 			var old_Y = Y_DA;
 
-			if( (VEN_1 == 1) && (VECTOR_0 == 0) )
+			// moved VEN_1 test to function VECTOR to enable persistent AND refresh vectors
+			if( (VECTOR_0 == 0) )
 				VECTOR( old_X, old_Y, new_X, new_Y );
 		    
 			// DER 9th August 2014 - Add debug code for drawing vectors.
@@ -176,24 +201,32 @@ function TekDisplay(hw, canvas) {
 			Y_DA = new_Y;
 		
 		} // End if bufclk.
-		
+	
 		// Check for cursor dot.
 		if( (type == 'SOT') && (VECTOR_0 == 1) && (VEN_1 == 0) ) {
 			if( adotpending ) {
+//console.log("X_DA: " + X_DA + "  Y_DA: " + Y_DA + "  X_CHAR: " + X_CHAR + "  Y_CHAR: " + Y_CHAR);
+
 				// setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'ADOT');
 				// double width and double height of character pixels
 				// 4 setPixel calls to interpolate between pixels for continuous font appearance
-				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR, 'ADOT' );
-				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR, 'ADOT' );
-				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR-1, 'ADOT' );
-				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR-1, 'ADOT' );
-								
+/*
+				setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + (2*Y_CHAR), 'ADOT', 1 );
+				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + (2*Y_CHAR), 'ADOT', 1 );
+    			setPixel( X_DA + ((2*X_CHAR)+2), Y_DA + ((2*Y_CHAR)-1), 'ADOT', 1 );
+				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + ((2*Y_CHAR)-1), 'ADOT', 1 );
+*/
+                setPixel ( X_DA + (2*X_CHAR), Y_DA + (2*Y_CHAR), 'ADOT', 2 );
 			} else {
 			    // setPixel( X_DA + X_CHAR, Y_DA + Y_CHAR, 'SOT');
 				// double width and double height of cursor pixels
 				// 2 setPixel calls instead of 4 because it's pixelated like on actual machine
-				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR, 'SOT' );
-				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR-1, 'SOT' );
+//				setPixel( X_DA + 2*X_CHAR+1, Y_DA + 2*Y_CHAR, 'SOT', 1 );
+//				setPixel( X_DA + 2*X_CHAR+2, Y_DA + 2*Y_CHAR-1, 'SOT', 1 );
+
+				setPixel( X_DA + (2*X_CHAR), Y_DA + (2*Y_CHAR), 'SOT', 1 );
+				setPixel( X_DA + ((2*X_CHAR)+1), Y_DA + ((2*Y_CHAR)+1), 'SOT', 1 );
+
 			}
 			adotpending = false;
 		} // End if sot.
@@ -214,8 +247,9 @@ function TekDisplay(hw, canvas) {
 			console.log( ' VECTOR-0 = ' ); console.log( VECTOR_0 );
 			console.log( ' VEN-1 = '    ); console.log( VEN_1 );
 		} // End if
-		
+
 	} // End of function SCREEN.
+
 
     // ***************
     // ***         ***
@@ -225,7 +259,6 @@ function TekDisplay(hw, canvas) {
 
 	this.ERASE = function() {
 		//console.log("TekDisplay: Erase screen");
-
         var imgd = canvasctx.getImageData(0, 0, width, height);
         var buffer = imgd.data.buffer;
         var buf8 = new Uint8ClampedArray(buffer);
@@ -256,13 +289,11 @@ function TekDisplay(hw, canvas) {
         setTimeout(function(){
             canvasctx.putImageData(imgd, 0, 0);
             hw.displayReady();
-            }, 500);
-		
+            }, 500);	
 	}
 
     
 	this.dvst_emulate = function() {
-	    
 	    var imgd = canvasctx.getImageData(0, 0, width, height);
         var buffer = imgd.data.buffer;
         var buf8 = new Uint8ClampedArray(buffer);
@@ -289,7 +320,6 @@ function TekDisplay(hw, canvas) {
 
 	
 	this.COPY = function() {
-	
         var link = document.createElement('a');
         link.download = "screen.png";
         link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");;

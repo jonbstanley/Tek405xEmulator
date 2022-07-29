@@ -387,6 +387,7 @@ function TekCpu(hw) {
 			
 			switch( IR ) {
 
+                case 0x00:  // Stops illegal instruction errors on encountering 0x00                
                 case 0x01:
                     instruction_mnemonic = "NOP";
                     instruction_description = "(6800) No operation";
@@ -2366,6 +2367,7 @@ function TekCpu(hw) {
                     CLR_FLAG( VF );
                     break;
                 default:
+                    console.log('MC6800.js illegal instruction: ' + ReturnHex( lastPC, 4 ) + " => " + ReturnHex(IR,2));
                     this.println('MC6800.js illegal instruction: ' + this.ReturnHex( lastPC, 4 ) + " => " + this.ReturnHex(IR,2));
                     i = 0;
                     break;
@@ -2397,6 +2399,10 @@ function TekCpu(hw) {
 		PC  = readWord( RESET_VECTOR );
 		SP  = 0x0000;
 		CCR = CCR_ALWAYS_ON | IF;
+    }
+
+    this.getLastPC = function() {
+        return lastPC;
     }
 
 	// -------------------------------------------------------------------------------------

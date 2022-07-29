@@ -24,14 +24,18 @@
  */
 
 
-function TEKTRONIX4051( window, canvas ) {
+function TEKTRONIX4051( windowObj, canvasObj ) {
 	
 	// Hardware components
-    var display = new TekDisplay(this, canvas);
-    var keyboard = new TekKeyboard(this, window);
+    var display = new TekDisplay(this, canvasObj);
+    var keyboard = new TekKeyboard(this, windowObj);
     var cpu = new TekCpu(this);
     var rom = new Tek4051Rom;
 	var ram = new Array(32*1024);
+    var romexp = new ROMexp;
+    var storage = new Storage();
+var osc;
+var ctx;
 
     // MC6820 PIA notation
     //  * CRA = Control Register A
@@ -108,7 +112,7 @@ function TEKTRONIX4051( window, canvas ) {
     
     var GPIB_REN_OUT  = 0; // Remote Enable. [CONTROLLER].
     
-    this.sbytes = []; // An empty array initially.
+    this.exesbytes = []; // An empty array initially.
     this.sbyteslength = 0; // Initially no bytes stored in the empty array!
     this.sbytesindex = -1; // Initially no program has been stored.
     
@@ -117,17 +121,152 @@ function TEKTRONIX4051( window, canvas ) {
     var GPIB_RDTIME_STATE = 0;
     var GPIB_RDTIME = "";
     var GPIB_RDTIME_INDEX = 0;
+
+    var LAST_CMD = 0;
+    var ADDR_PRIMARY = 0;
+    var ADDR_SECONDARY = 0;
+
+	var ADDR_TAPE = 5;	// Web storage "tape drive" address
+
+    var current_fnumstr = 0;
+    var bin_data_length = 0;
+    var bin_byte_cnt = 0;
+    var bin_data_type = 0;
     
     this.KBD_TTY_0   = 1;
     this.KBD_SHIFT_0 = 1;
     this.KBD_CTRL_0  = 1;
     
-	this.BANK_SWITCH_SELECTOR = 0;
+    // 0-disable; 1-enable
+	var BANK_SWITCH_SELECTOR = 0;
+    var BSX_ADDRESS = 0;
 	
 	var beep = new Audio( "beep.mp3" );
 	
 	var click = new Audio( "click.mp3" );
+	
+	this.audioOn = true;
 
+    // Random number generator mod
+    var RND_KC_BODGE0 = 0;
+    var RND_KC_BODGE1 = 0;
+    // Random number generator mod
+
+    // ***************
+    // ***         ***
+    // ***  print  ***
+    // ***         ***
+    // ***************
+
+    this.print = function( str ) {
+
+		console.print(str);
+
+    } // End of function print.
+
+    // *****************
+    // ***           ***
+    // ***  println  ***
+    // ***           ***
+    // *****************
+
+    this.println = function( str ) {
+
+	this.logbuf.textContent += str + "\n";
+
+	} // End of function println.
+
+    // ******************
+    // ***            ***
+    // ***  printHex  ***
+    // ***            ***
+    // ******************
+
+    this.printHex1 = function( n ) {
+
+      var nn = n & 0x000F; // Isolate the least significant 4 bits.
+
+      switch( nn ) {
+        case 0x0 : return '0';
+        case 0x1 : return '1';
+        case 0x2 : return '2';
+        case 0x3 : return '3';
+        case 0x4 : return '4';
+        case 0x5 : return '5';
+        case 0x6 : return '6';
+        case 0x7 : return '7';
+        case 0x8 : return '8';
+        case 0x9 : return '9';
+        case 0xA : return 'A';
+        case 0xB : return 'B';
+        case 0xC : return 'C';
+        case 0xD : return 'D';
+        case 0xE : return 'E';
+        case 0xF : return 'F';
+        default  : break;
+      } // End switch nn.
+
+    } // End of function printHex1.
+
+    this.printHex2 = function( n ) {
+		byte = "";
+		byte += this.printHex1( n >>> 4 ); // Hi nibble.
+		byte += this.printHex1( n       ); // Lo nibble.
+		return byte;
+    } // End of function printHex2.
+
+    this.printHex4 = function( n ) {
+		word = "";
+		word += this.printHex2( n >>> 8 ); // Hi word.
+		word += this.printHex2( n       ); // Lo word.
+		return word;
+    } // End of function printHex4.
+
+
+	this.programLoaded = function() {
+		GPIB_STATE = 3; // File loaded and seen the correct primary and secondary GPIB addresses.				
+		if( this.sbyteslength > 0 )
+		this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be loaded.
+	}
+
+/*
+	function GPIBlog(tekobj) {
+		var flagstr = "";
+		var gpibstr = "";
+
+		// GPIB signals
+		GPIB_IFC_OUT ? flagstr += "IF " : flagstr += "-- ";
+		GPIB_REN_OUT ? flagstr += "RN " : flagstr += "-- ";
+		GPIB_ATN_OUT ? flagstr += "AT " : flagstr += "-- ";
+		GPIB_SRQ_IN ? flagstr += "SQ " : flagstr += "-- ";
+		(GPIB_EOI_OUT || GPIB_EOI_IN) ? flagstr += "EI " : flagstr += "-- ";
+		(GPIB_DAV_OUT || GPIB_DAV_IN) ? flagstr += "DA " : flagstr += "-- ";
+		(GPIB_NRFD_OUT || GPIB_NRFD_IN) ? flagstr += "NR " : flagstr += "-- ";
+		(GPIB_NDAC_OUT || GPIB_NDAC_IN) ? flagstr += "ND " : flagstr += "  ";
+
+		// GPIB comands
+        if (GPIB_ATN_OUT) {
+			if ((GPIB_DATA_OUT > 0x20) && (GPIB_DATA_OUT < 0x40)) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " MLA";
+			}
+			if ((GPIB_DATA_OUT > 0x40) && (GPIB_DATA_OUT < 0x60)) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " MTA";
+			}else if ((GPIB_DATA_OUT > 0x5F) && (GPIB_DATA_OUT < 0x80)) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " MSA";
+			}
+		}else{
+			if (GPIB_LISTEN && GPIB_DAV_IN) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_IN) + " data in";
+			}
+			if (GPIB_TALK && GPIB_DAV_OUT) {
+				gpibstr = tekobj.printHex2(GPIB_DATA_OUT) + " data out";
+			}
+		}
+
+		console.log(flagstr + gpibstr);
+
+	}
+*/
 
     // **********************
     // ***                ***
@@ -136,6 +275,10 @@ function TEKTRONIX4051( window, canvas ) {
     // **********************
     
     this.PROCESS_GPIB = function() {
+
+//		GPIBlog(this);
+
+
         /*
 		console.log( 'PROCESS_GPIB:' );
 
@@ -163,158 +306,351 @@ function TEKTRONIX4051( window, canvas ) {
 		console.log( ' NDAC='    ); this.printHex1( GPIB_NDAC_OUT );
 	    } */ // End if GPIB_LISTEN.
 		
-		// Process data from the 4951 to the GPIB.
+		// Process data from the 4051 to the GPIB.
 		if( GPIB_TALK ) {
 		
 			if( (GPIB_DAV_OUT == 1) && (GPIB_NDAC_IN == 1) ) {
+
+/*
+                if ( GPIB_EOI_OUT == 1 ) {
+                    console.log( "EOI signalled! (" + this.printHex2(GPIB_DATA_OUT) + ")" );
+                }
+*/
 			
-				// Some 'new' command data for me.
-				
+				// Some GPIB command data for me to process.
+
 				if( GPIB_ATN_OUT == 1 ) {
-				
-					// Some GPIB command data for me to process.
-					
-					//console.log( 'PROCESS_GPIB: COMMAND=0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
-					
-					if( GPIB_DATA_OUT == 0x42 ) {
-						//
-						GPIB_RDTIME_STATE = 1;
-						//
-					} else if( GPIB_DATA_OUT == 0x6D ) {
-						//
-						if( GPIB_RDTIME_STATE == 1 ) {
-							//
-							var d = new Date();
-							//
-							var m = [ "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" ];
-							//
-							GPIB_RDTIME = "";
-							//
-							var i;
-							//
-							i = d.getDate(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += "-";
-							GPIB_RDTIME += m[ d.getMonth() ];
-							GPIB_RDTIME += "-";
-							i = d.getFullYear() % 100; if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += " ";
-							i = d.getHours(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += ":";
-							i = d.getMinutes(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							GPIB_RDTIME += ":";
-							i = d.getSeconds(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
-							//
-							GPIB_RDTIME_INDEX = 0; // First character of the DATE/TIME string.
-							//
-							//console.log( 'PROCESS_GPIB: RDTIME = ' + GPIB_RDTIME );
-							//
-							GPIB_RDTIME_STATE = 2;
-							//
-						} // End if
-						//
-					} // End if
-					
-					// Look for the GPIB Primary Address.
-					//
-					if( GPIB_DATA_OUT == 0x41 ) { // 0x41 == 65 == GPIB Device #1 Primary Talk Address.
-					
-						// State '1' means that the file has been loaded and is awaiting the correct GPIB Primary Address.
-						//
-						if( GPIB_STATE == 1 ) {
-						
-							GPIB_STATE = 2; // File has been loaded and I have now seen the correct GPIB Primary Address.
-							
-						// State '0' means that a file has not been loaded - so I should just ignore the GPIB Primary Address.
-						//
-						} else if( GPIB_STATE == 0 ) {
-						
-							// Ignore as no file is loaded.
-							
-						// I have seen a correct GPIB Primary Address - but potentially out of context!
-						//
-						} else if( GPIB_STATE >= 2 ) {
-						
-							GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
-							
-						} // End if.
-						 
-					} // End if correct GPIB Primary Address.
 
-					// Look for the GPIB Secondary Address.
-					//
-					if( GPIB_DATA_OUT == 0x64 ) { // 0x64 == 100 == OLD/APPEND command.
-					
-						// State '2' means that the file has been loaded, I have already seen the correct GPIB Primary Address and I
-						// am awaiting the correct GPIB Secondar Address.
-						//
-						if( GPIB_STATE == 2 ) { 
-						
-							GPIB_STATE = 3; // File loaded and seen the correct primary and secondary GPIB addresses.
-							
-							if( this.sbyteslength > 0 )
-								this.sbytesindex = 0; // Start at the beginning of the desired 'program' to be loaded.
+					// Its a PRIMARY listen (MLA) or talk (MTA) address
+                    if ( (GPIB_DATA_OUT > 0x20) && (GPIB_DATA_OUT < 0x60) ) {
 
-						// State '0' means that a file has not been loaded - so I should just ignore the GPIB Secondary Address.
-						//
-						} else if( GPIB_STATE == 0 ) {
+                        ADDR_PRIMARY = GPIB_DATA_OUT;
+
+						// Look for the GPIB Primary Address (device #1 - emulator).
+						if( GPIB_DATA_OUT == 0x41 ) { // 0x41 == 65 == GPIB Device #1 Primary Talk Address.
+
+							// State '1' means that the file has been loaded and is awaiting the correct GPIB Primary Address.
+							//
+							if( GPIB_STATE == 1 ) {
 						
-							// Ignore as no file is loaded.
+								GPIB_STATE = 2; // File has been loaded and I have now seen the correct GPIB Primary Address.
 							
-						// State '1' means that a file has been loaded - but is awaiting the correct GPIB Primary Address - so I should just ignore the GPIB Secondary Address.
-						//
-						} else if( GPIB_STATE == 1 ) {
+							// State '0' means that a file has not been loaded - so I should just ignore the GPIB Primary Address.
+							//
+							} else if( GPIB_STATE == 0 ) {
 						
-							// Ignore as no correct GPIB Primary Address seen so far.
+								// Ignore as no file is loaded.
 							
-						} else if( GPIB_STATE >= 3 ) {
+							// I have seen a correct GPIB Primary Address - but potentially out of context!
+							//
+							} else if( GPIB_STATE >= 2 ) {
 						
-							GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
+								GPIB_STATE = 1; // Go back to the 'file loaded' state as obviously something has gone wrong with the protocol.
 							
-						} // End if.
+							} // End if.
 						 
-					} // End if.
-					
-					// Look for a GPIB 'UNTALK' Command.
-					if( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
-					
-						if( GPIB_STATE == 0 ) {
+						} // End if correct GPIB Primary Address.
+
+
+						// Enable clock response on address 2
+/*
+						if( GPIB_DATA_OUT == 0x42 ) {
+							//
+							GPIB_RDTIME_STATE = 1;
+							//
+						}
+*/
+						if ( GPIB_DATA_OUT == 0x5F ) { // 0x5F == 95 == UNTALK.
+
+							if( GPIB_STATE == 0 ) {
 						
-							// Ignore as no file loaded.
+								// Ignore as no file loaded.
 							
-						} else {
+							} else {
 						
-							GPIB_STATE = 1; // Force to 'waiting for the correct GPIB Primary Address'.
-							GPIB_RDTIME_STATE = 0;
+								GPIB_STATE = 1; // Force to 'waiting for the correct GPIB Primary Address'.
+								GPIB_RDTIME_STATE = 0;
 							
-						} // End if.
+							} // End if.
+
+							ADDR_PRIMARY = 0;
+							ADDR_SECONDARY = 0;
 						
-					} // End if looking for GPIB 'UNTALK' command.
-					
-				} else {
-				
-					// Normal data for me.
-					// this.print( 'PROCESS_GPIB: NORMAL =0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
-					
-					//if( GPIB_DATA_OUT == 0x0D )
-						//this.println('');
-					//else
-						//this.print( "" + String.fromCharCode( GPIB_DATA_OUT ) );
-					
-				} // End if
-				
-			} // End if something to process.
+						} // End if looking for GPIB 'UNTALK' command.
+
+
+					// Its a SECONDARY address command
+                    }else if ( (GPIB_DATA_OUT > 0x5F) && (GPIB_DATA_OUT < 0x80) ) {	// Secondary address
+
+						ADDR_SECONDARY = GPIB_DATA_OUT;
+
+//						console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
+//						console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+
+						if (ADDR_PRIMARY && ADDR_SECONDARY) {
+
+					        // SAVE command (storage)
+						    if ( ADDR_SECONDARY == 0x61 ) {
+
+                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
+
+//						            console.log("Saving to file: " + current_fnumstr);
+								    storage.saveToTapeReady();
+
+                                } // End ADDR_PRIMARY
+
+							} // End of SAVE
+
+                            // CLOSE command (storage)
+                            if (ADDR_SECONDARY == 0x62) {
+
+                                if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
+
+//                                    console.log("Closing current file...");
+                                    storage.closeFile();
+//                                    console.log("Done.");
+
+                                }   // End ADDR_PRIMARY
+
+                            }   // End of CLOSE
+
+
+							// OLD/APPEND command (storage)
+							if ( ADDR_SECONDARY == 0x64 ) {
+
+//							    console.log("Primary address = " + this.printHex2(ADDR_PRIMARY));
+//							    console.log("OLD/APPEND command.");
+
+							    if ( ADDR_PRIMARY == 0x41 ) {	// GPIB primary address = MTA1
+
+//							        console.log("Reset index on loaded file.");
+									this.programLoaded();
+
+								} // End ADDR_PRIMARY == 0x01
+
+                                if ( ADDR_PRIMARY == (ADDR_TAPE + 0x40) ) {
+							        if (current_fnumstr) {
+//									    console.log("Reading ASCII file: " + current_fnumstr);
+									    storage.readFromTape(current_fnumstr, 'A');
+									    if (current_fnumstr != '0') this.programLoaded();
+                                    }
+								} // End ADDR_PRIMARY
+
+							} // End of OLD/APPEND
+							
+							// BSAVE comand (save binary program)
+							if ( ADDR_SECONDARY == 0x71 ) {
+								if (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) {
+
+								    storage.saveToTapeReady();
+
+                                } // End ADDR_PRIMARY
+                                
+							} // End BSAVE command
+
+						} // ADDR_PRIMARY && ADDR_SECONDARY
+
+						//console.log( 'PROCESS_GPIB: COMMAND=0x' ); this.printHex2( GPIB_DATA_OUT ); this.println('');
+
+						if( GPIB_DATA_OUT == 0x6D ) {
+							//
+                            if ( ADDR_PRIMARY == 0x42 ) {
+//							if( GPIB_RDTIME_STATE == 1 ) {
+								//
+								var d = new Date();
+								//
+								var m = [ "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" ];
+								//
+								GPIB_RDTIME = "";
+								//
+								var i;
+								//
+								i = d.getDate(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += "-";
+								GPIB_RDTIME += m[ d.getMonth() ];
+								GPIB_RDTIME += "-";
+								i = d.getFullYear() % 100; if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += " ";
+								i = d.getHours(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += ":";
+								i = d.getMinutes(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								GPIB_RDTIME += ":";
+								i = d.getSeconds(); if( i < 10) GPIB_RDTIME += "0"; GPIB_RDTIME += ("" + i);
+								//
+								GPIB_RDTIME_INDEX = 0; // First character of the DATE/TIME string.
+								//
+								//console.log( 'PROCESS_GPIB: RDTIME = ' + GPIB_RDTIME );
+								//
+								GPIB_RDTIME_STATE = 2;
+								//
+							} // End if GPIB_RDTIME_STATE
+							//
+						} // End if GPIB_DATA_OUT == 0x6D
+
+					}	// End decoding GPIB byte during ATN
+
+				} // End GPIB_ATN_OUT = 1
+
+				// Send some parameter or data
+				if( GPIB_ATN_OUT == 0 ) {
+
+					//console.log("Primary address: " + this.printHex2(ADDR_PRIMARY));
+					//console.log("Secondary address: " + this.printHex2(ADDR_SECONDARY));
+					//console.log("GPIB data out: " + this.printHex2(GPIB_DATA_OUT));
+
+					if ( ADDR_PRIMARY && ADDR_SECONDARY) {
+
+						// console.log("Primary and secondary address set.");
+
+						// SAVE command (storage)
+						if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x61) ) {
+						    if (current_fnumstr) {
+						        storage.saveToTapeBin(GPIB_DATA_OUT);
+								if (GPIB_EOI_OUT) storage.saveToTapeDone(current_fnumstr, 'A');
+							}
+						}
+
+                        // PRINT command (storage)
+                        if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6C) ) {
+                            storage.printToFile(GPIB_DATA_OUT);
+                            if (GPIB_DATA_OUT == '0x0D') storage.writeToFileDone();
+                        }
+
+                        // WRITE command (storage)
+                        if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x6F) ) {
+//console.log(this.printHex2(GPIB_DATA_OUT));
+//console.log("Writing...");
+                            storage.writeToFile(GPIB_DATA_OUT);
+                            if (bin_byte_cnt == 0) {
+                                bin_data_type = ((GPIB_DATA_OUT&0xE0)>>5) + 2;
+                                bin_data_length = (GPIB_DATA_OUT&0x1F)*256;
+                            }
+//console.log("Data len1: " + bin_data_length);
+                            if (bin_byte_cnt == 1) {
+                                bin_data_length = bin_data_length + GPIB_DATA_OUT;
+                                if (bin_data_type == 4) bin_data_length++;  // Text data has one extra byte?
+                            }
+//console.log("Data len2: " + bin_data_length);
+                            bin_byte_cnt++;
+                            if (bin_byte_cnt == bin_data_length+2) {
+                                bin_byte_cnt = 0;
+                                bin_data_length = 0;
+                                bin_data_type = 0;
+                                storage.writeToFileDone();
+//console.log("Write complete.");
+                            }
+                        }
+
+						// BSAVE command (storage)
+						if ( ADDR_SECONDARY == 0x71 ) {
+                            if ( ADDR_PRIMARY == (ADDR_TAPE + 0x20) ) {
+						        if (current_fnumstr) {
+						            storage.saveToTapeBin(GPIB_DATA_OUT);
+								    if (GPIB_EOI_OUT) storage.saveToTapeDone(current_fnumstr, 'B');
+							    }
+                            }
+						}
+
+                        // DIR command (send file  name)
+						if ( ADDR_SECONDARY == 0x73 ) {
+                            storage.setDirEntry(GPIB_DATA_OUT);
+                        }
+
+
+				        // FIND command (storage)
+						if ( (ADDR_PRIMARY == (ADDR_TAPE + 0x20)) && (ADDR_SECONDARY == 0x7B) ) {
+
+							// Preceding space singals new file number
+							if (GPIB_DATA_OUT == 0x20) current_fnumstr = "";
+
+                            // CR signals end of data
+                            if (GPIB_DATA_OUT == 0x0D) {
+                                storage.findFile(current_fnumstr);
+//                                console.log("Set file number to: " + current_fnumstr);
+                            }
+
+							// Add numeric digits to file number string
+							if (GPIB_DATA_OUT > 0x29 && GPIB_DATA_OUT < 0x3A) {
+ 							    current_fnumstr += String.fromCharCode(GPIB_DATA_OUT);
+                                // Clear file counters
+                                bin_byte_cnt = 0;
+                                bin_data_len = 0;
+							}						
+						}   // END of FIND command
+
+					} // END of ADDR_PRIMARY && ADDR_SECONDARY
+
+				} // End of GPIB_ATN_OUT = 0
+
+
+			} // End GPIB_DAV_OUT / GPIB_NDAC_IN (outbound data to process).
 
 			GPIB_NDAC_IN = GPIB_DAV_OUT ^ 0x01; // Invert before return.				
 		
-		} // End if GPIB_TALK.
+		} // End of GPIB_TALK.
 		
+
 		if( GPIB_LISTEN ) {
+
+            if( GPIB_ATN_OUT == 0 ) {
+
+                if ( ADDR_PRIMARY && ADDR_SECONDARY) {
+
+                    // PWD command (Emulator does not support direcories. This simply returns '/root'/)
+                    if ( ADDR_SECONDARY == 0x69 ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 9; // Signal we are ready to read the directory name
+                        }
+
+                    }   // End of DIR command
+
+
+                    // INPUT command (storage)
+                    if ( (ADDR_SECONDARY == 0x6A ) || (ADDR_SECONDARY == 0x6D) ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 5; // Signal we are ready to read ASCII data
+                        }
+
+                    } // End of INPUT command
+
+
+                    // READ command (storage)
+                    if ( ADDR_SECONDARY == 0x6E ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 6; // Signal we are ready to read BINARY data
+                        }
+
+                    } // End of READ command
+
+                    // BOLD command (storage)
+                    if ( ADDR_SECONDARY == 0x71 ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 7; // Signal we are ready to read BINARY PROGRAM
+                        }
+
+                    } // End of BOLD command
+
+                    // TLIST command (storage)
+                    if ( ADDR_SECONDARY == 0x73 ) {
+
+                        if ( ADDR_PRIMARY == (ADDR_TAPE+0x40) ) {
+                            GPIB_STATE = 8; // Signal we are ready to get the next directory entry
+                        }
+
+                    } // End of BOLD command
+
+                } // End of ADDR_PRIMARY && ADDR_SECONDARY
+
+            } // End of GPIB_ATN_OUT = 0
+
+		} // End of GPIB_LISTEN.
 		
-			// TODO:
-			
-		} // End if GPIB_LISTEN.
-		
-		
+//		GPIB_NDAC_IN = GPIB_DAV_OUT ^ 0x01; // Invert before return.
+
     } // End of function PROCESS_GPIB.
 
     // *******************
@@ -327,6 +663,7 @@ function TEKTRONIX4051( window, canvas ) {
     
 		if( GPIB_LISTEN ) {
 		
+            // Read a program into emulator memory
 			if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 3) ) {
 			
 				// Are there any (more) characters to send?
@@ -376,16 +713,18 @@ function TEKTRONIX4051( window, canvas ) {
 				
 				} // End if any more character to send of the program.
 
+
+            // Read in date and time
 			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_RDTIME_STATE == 2) ) {
 
-				// Send a data byte to the 4015.
+				// Send a data byte to the 4051.
 				//
 				GPIB_DATA_IN = GPIB_RDTIME.charCodeAt( GPIB_RDTIME_INDEX ) & 0x7F;
 					
 				// Is this the 'last' character?
 				//	
 				if( GPIB_RDTIME_INDEX == (GPIB_RDTIME.length - 1) ) GPIB_EOI_IN = 1;
-				else                                                          GPIB_EOI_IN = 0;
+				else                                                     GPIB_EOI_IN = 0;
 				
 				// Bump the index.
 				//
@@ -398,6 +737,135 @@ function TEKTRONIX4051( window, canvas ) {
 				if( GPIB_EOI_IN == 1 ) GPIB_RDTIME_STATE = 0;
 				
 				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
+            // Read ASCII data from storage (INPUT)
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 5) ) {
+
+                
+//console.log("INPUT sec address: " + this.printHex2(ADDR_SECONDARY));
+				if (ADDR_SECONDARY == 0x6A) {
+                    var value = storage.copyFromFile();
+                    GPIB_DATA_IN = value & 0xFF;
+                    GPIB_EOI_IN = (value & 0x0100) >> 8;
+//console.log("Data: " + this.printHex2(GPIB_DATA_IN));
+//console.log("Receive EOI: " + this.printHex2(GPIB_EOI_IN));
+			        // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x80) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
+                }
+
+				if (ADDR_SECONDARY == 0x6D) {
+                    GPIB_DATA_IN = storage.inputFromFile();
+				    // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x0D) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
+                }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
+            // Read BINARY data from storage (READ)
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 6) ) {
+
+				// Read a data byte from the 4051.
+				GPIB_DATA_IN = storage.readFromFile();
+
+//console.log(this.printHex2(GPIB_DATA_IN));
+
+                if (bin_byte_cnt == 0) {
+                    bin_data_type = ((GPIB_DATA_IN&0xE0)>>5)+2;
+                    bin_data_length = (GPIB_DATA_IN&0x1F)*256;
+                }
+//console.log("Data len1: " + bin_data_length);
+                if (bin_byte_cnt == 1) {
+                    bin_data_length = bin_data_length + GPIB_DATA_IN;
+                    if (bin_data_type == 4) bin_data_length++;  // Text data has one extra byte?
+//console.log("Data len2: " + bin_data_length);
+                }
+                bin_byte_cnt++;
+                if (bin_byte_cnt == bin_data_length+2) {
+                    bin_byte_cnt = 0;
+                    bin_data_length = 0;
+                    bin_data_type = 0;
+                    GPIB_EOI_IN = 1;
+
+//console.log("Write complete.");
+                }else{
+                    GPIB_EOI_IN = 0;
+                }
+
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
+            // Read BINARY PROGRAM from storage
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 7) ) {
+
+				// Send a data byte to the 4051.
+				//
+                var value = storage.readBinProg() & 0xFF;
+
+                if (value == -1) {
+                    GPIB_EOI_IN = 1;   // Error - signal EOI to terminate
+                }else{
+                    GPIB_DATA_IN = value & 0xFF;
+                    GPIB_EOI_IN = value & 0x0100;   // Is EOI bit set ?
+//console.log(this.printHex2(GPIB_DATA_IN));
+                }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 3;
+
+                // Possibly GPIB_STATE = 3 - program loaded
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
+            // Read directory entry (TLIST) from storage (via INPUT @5,19)
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 8) ) {
+
+				if (ADDR_SECONDARY == 0x73) {
+                    GPIB_DATA_IN = storage.getDirEntry();
+//console.log(this.printHex2(GPIB_DATA_IN));
+				    // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x0D) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
+                }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
+
+            // Read the directory name from storage (via INPUT @5,9)
+			} else if( (GPIB_NDAC_OUT == 0) && (GPIB_NRFD_OUT == 1) && (GPIB_DAV_IN == 0) && (GPIB_STATE == 9) ) {
+
+				if (ADDR_SECONDARY == 0x69) {
+                    GPIB_DATA_IN = storage.getDirectory();
+//console.log(this.printHex2(GPIB_DATA_IN));
+				    // Is this the 'last' character?
+                    if (GPIB_DATA_IN == 0x0D) {
+                        GPIB_EOI_IN = 1;
+				    }else{
+                        GPIB_EOI_IN = 0;
+                    }
+                }
+					
+				if( GPIB_EOI_IN == 1 ) GPIB_STATE = 0;
+				
+				GPIB_DAV_IN = 1; // Signify that you have new data.
+
 				
 			} else if( (GPIB_NDAC_OUT == 1) && (GPIB_DAV_IN == 1) ) {
 
@@ -510,7 +978,8 @@ function TEKTRONIX4051( window, canvas ) {
 				// **************
 				// ***  U461  ***
 				// **************
-				
+
+/***** Random number generator mod				
 				case 0x87A8 : 	if( PIA_U461_CRA & 0x04 ) {
 									PIA_U461_CRA &= 0x3F; // Clear both interrupt bits.
 									// this.print('Reading U461 DRA value='); this.printHex2( (PIA_U461_IRA & (PIA_U461_DDRA ^ 0xFF)) | (PIA_U461_ORA & PIA_U461_DDRA) ); this.println('');
@@ -519,6 +988,23 @@ function TEKTRONIX4051( window, canvas ) {
 								} else
 									return PIA_U461_DDRA;
 								break;
+*/
+// Random number generator mod
+                case 0x87A8 :   if( PIA_U461_CRA & 0x04 ) {
+                                    PIA_U461_CRA &= 0x3F; // Clear both interrupt bits.
+                                    if( cpu.getLastPC() == 0x9716 ) {
+                                        if( RND_KC_BODGE1 > 0 ) {
+                                            RND_KC_BODGE1 = (RND_KC_BODGE1 - 1) & 0x3F; // Decrement if a count in progress.
+                                        } else {
+                                            RND_KC_BODGE1 = RND_KC_BODGE0; // Take a snapshot.
+                                        } // End if.
+                                        return RND_KC_BODGE1; // The result of the random keyboard counter is...
+                                    } else
+                                        return (PIA_U461_IRA & (PIA_U461_DDRA ^ 0xFF)) | (PIA_U461_ORA & PIA_U461_DDRA);
+                                } else
+                                    return PIA_U461_DDRA;
+                                break;
+// Random number generator mod
 								
 				case 0x87A9 : 	// this.print('Reading U461 CRA value='); this.printHex2( PIA_U461_CRA ); this.println('');
 								return PIA_U461_CRA;
@@ -637,27 +1123,70 @@ function TEKTRONIX4051( window, canvas ) {
 		
 		// Is this a read from ROM?
 		} else if( (address >= 0x8000) && (address <= 0xFFFF) ) {
-		    
+           		    
 		    // Check for bank switching being enabled...
-			if( (address >= 0x8800) && (address < 0xA800) && (this.BANK_SWITCH_SELECTOR > 0) ) {
-			
+			if( (address >= 0x8800) && (address < 0xA800) && (BANK_SWITCH_SELECTOR > 0) ) {
+//console.log("Addr: " +  this.printHex4(address), "Bank switch enabled.");
+                // BANK SWITCH ENABLED and not the default 4051 ROM set.
+                switch(BANK_SWITCH_SELECTOR) {
+                    case 1 :
+                        // Overflow ROM U101/U1 (747)
+                        if( (address >= 0x8800) && (address < 0x9000) ) return rom.ROM747[ address - 0x8800 ];
+                        // Overflow ROM U201/U11 (748)
+                        if( (address >= 0x9000) && (address < 0x9800) ) return rom.ROM748[ address - 0x9000 ];
+                        break;
+                    case 2 :
+                        // Ignore
+                        break;
+                    case 3 :
+                        // Ignore
+                        break;
+                    case 4 :
+                        // Rom Backpack Left Slot
+                        if( (address >= 0x8800) && (address < 0xA800) ) return rom.DERROML[ address - 0x8800 ];
+                        break;
+                    case 5 :
+                        // ROM Backpack Right Slot
+                        if( (address >= 0x8800) && (address < 0xA800) ) return rom.DERROMR[ address - 0x8800 ];
+                        break;
+                    case 6 :
+                        // 4051 ROM Expander Left Bank
+//console.log("Addr: " +  this.printHex4(address), "Bank switch: " + BANK_SWITCH_SELECTOR, "BSXaddr: " + BSX_ADDRESS);
+                        if( (address >= 0x8800) && (address < 0xA800) ) return romexp.RomExpLeftBank(address, BSX_ADDRESS);
+                        break;
+                    case 7 :
+                        // 4051 ROM Expander Right Bank
+//console.log("Addr: " +  this.printHex4(address), "Bank switch: " + BANK_SWITCH_SELECTOR, "BSXaddr: " + BSX_ADDRESS);
+                        if( (address >= 0x8800) && (address < 0xA800) ) return romexp.RomExpRightBank(address, BSX_ADDRESS);
+                        break;
+                    default :
+                        // Unknown bank switch mapping.
+                        return 0x00;
+                }
+
+
+	
 				// BANK SWITCH ENABLED and not the default 4051 ROM set.
-				
-				if( (address >= 0x8800) && (address < 0x9000) && (this.BANK_SWITCH_SELECTOR == 1) ) {
-				
+/*				
+				if( (address >= 0x8800) && (address < 0x9000) && (BANK_SWITCH_SELECTOR == 1) ) {
+console.log("Addr: " + this.printHex4(address), "Bank switch = " + 1);				
 					// U101/U1 (747)
 					return rom.ROM747[ address - 0x8800 ];
 					
-				} else if( (address >= 0x9000) && (address < 0x9800) && (this.BANK_SWITCH_SELECTOR == 1) ) {
+				} else if( (address >= 0x9000) && (address < 0x9800) && (BANK_SWITCH_SELECTOR == 1) ) {
+console.log("Addr: " + this.printHex4(address), "Bank switch = " + 1);
 					// U201/U11 (748)
 					return rom.ROM748[ address - 0x9000 ];
-				} else if( (address >= 0x8800) && (address < 0x9000) && (this.BANK_SWITCH_SELECTOR == 4) ) {
+				} else if( (address >= 0x8800) && (address < 0xA800) && (BANK_SWITCH_SELECTOR == 4) ) {
+console.log("Addr: " + this.printHex4(address), "Bank switch = " + 4);
 					// My ROM BS(L).
 					return rom.DERROM[ address - 0x8800 ];
 				} else {
+console.log("Addr: " + this.printHex4(address), "Bank switch = unknown");
 					// Unknown bank switch mapping.
 					return 0x00;
 				}
+*/
 			} 
 			else {
 				return rom.ROM[ address - 0x8000 ];
@@ -784,11 +1313,19 @@ function TEKTRONIX4051( window, canvas ) {
 								break;
 								
 				case 0x87AA : 	if( PIA_U461_CRB & 0x04 ) {
-									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;
-									var npb7 = (value             >>> 7) & 0x01;
-									if( opb7 != npb7 ) {
-										beep.play(); // This works - but not too well!
+									var opb7 = (PIA_U461_ORB >>> 7) & 0x01;     // Last bit of previous value
+									var npb7 = (value        >>> 7) & 0x01;     // Last bit of current value
+									if( opb7 != npb7 ) {    // If its changed since last iteration
+										if (this.audioOn) beep.play(); // This works - but not too well!
 									} // End if.
+/*
+                                    var spb7 = (value >>> 7) & 1;
+                                    if (spb7 == 1) {
+                                        startOsc();
+                                    }else{
+                                        stopOsc();
+                                    }
+*/
 									PIA_U461_ORB = value;
 									GPIB_EOI_OUT = (PIA_U461_ORB >>> 4) & 0x01;
 									GPIB_REN_OUT = (PIA_U461_ORB >>> 7) & 0x01;
@@ -886,7 +1423,8 @@ function TEKTRONIX4051( window, canvas ) {
 				// ***  BANK SWITCH SELECTOR  ***
 				// ******************************
 
-				case 0x87C0 :	this.BANK_SWITCH_SELECTOR = (value >>> 3) & 0x07; 
+				case 0x87C0 :   BSX_ADDRESS = value & 0x07;	
+                                BANK_SWITCH_SELECTOR = (value >>> 3) & 0x07; 
 								break;
 							
 				// **************
@@ -1007,12 +1545,13 @@ function TEKTRONIX4051( window, canvas ) {
         // Deassert DRBUSY-O bit active low
         PIA_U565_IRA |= 0x04;
     }
-    
+
+/*    
     this.keyboardData = function(type, key) {
         switch( type ) {
 			case 'PRESS' :
 			    PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F);
-			    click.play(); // This works - but not too well!
+			    if (this.audioOn) click.play(); // This works - but not too well!
 			    break;
 			case 'RELEASE' :
 		        PIA_U461_IRA  = 0x80 | (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
@@ -1021,13 +1560,32 @@ function TEKTRONIX4051( window, canvas ) {
 		        break;
 		}
     }
+*/
     
+	this.keyboardPress = function(key) {
+		// Set or unset shift bit
+//		(this.KBD_SHIFT_0 & 0x01) ? (PIA_U461_IRB |= 0x01) : (PIA_U461_IRB &= ~0x01);
+
+		// Set CapsLock and key value
+		PIA_U461_IRA  = ((this.KBD_TTY_0 & 0x01) << 7) | (key & 0x7F) ;
+		if (this.audioOn) click.play(); // This works - but not too well!
+	}
+
+
+	this. keyboardRelease = function() {
+		PIA_U461_IRA  = 0x80 | (this.KBD_TTY_0 & 0x01) << 7; // Just the TTY-0 signal.
+	}
+
+
     // For some reason, asserting the interrupt on an actual keyboard event
     // does not produce an immediate response in emulation so the latency
     // to detect a press is unacceptably long, so we just fire the keyboard
     // interrupt on a regular refresh interval
     function keyboardInterrupt() {
         PIA_U461_CRA |= 0x80; // KEY-I feeds into CA1 to set IRQA1.
+        // Random number generator mod
+        RND_KC_BODGE0 = (RND_KC_BODGE0 + 1) & 0x3F;
+        // Random number generator mod
     }
  
     this.checkIRQ = function() {
@@ -1050,12 +1608,32 @@ function TEKTRONIX4051( window, canvas ) {
 		key_interval = setInterval( keyboardInterrupt, 10 ); // 100 intervals per second
         dvst_emulate_interval = setInterval( display.dvst_emulate, 100 );
         // Deassert DRBUSY-O bit active low so display is ready immediately for CPU to use
-        PIA_U565_IRA = 0x04;
+        PIA_U565_IRA |= 0x04;
     }
-    
+
+/* Original keyCode version
     this.execute_fcnkey = function(keyCode, press) {
-		keyboard.FcnKey( keyCode , press );
+		if (press) {
+			var ev = new KeyboardEvent('keydown', {'keyCode':keyCode,'which':keyCode});
+		}else{
+			var ev = new KeyboardEvent('keyup', {'keyCode':keyCode,'which':keyCode});
+		}
+		windowObj.dispatchEvent(ev);
+//		keyboard.FcnKey( keyCode , press );
     }
+*/
+
+    this.fcnkey_press = function(keyCode) {
+		var ev = new CustomEvent('kdbePress', { detail: {'scancode': keyCode, 'type': 'keydown' } });
+		windowObj.dispatchEvent(ev);
+    }
+
+
+    this.fcnkey_release = function(keyCode) {
+		var ev = new CustomEvent('kdbeRelease', { detail: {'scancode': keyCode, 'type': 'keyup' } });
+		windowObj.dispatchEvent(ev);
+    }
+
     
     this.execute_copy = function() {
 		display.COPY();
@@ -1063,7 +1641,7 @@ function TEKTRONIX4051( window, canvas ) {
 	
     this.execute_stop = function() {
 		clearInterval( exec_interval );
-		clearInterval( keyboardInterrupt );
+		clearInterval( key_interval );
         clearInterval( dvst_emulate_interval );
     }
     
@@ -1106,6 +1684,27 @@ function TEKTRONIX4051( window, canvas ) {
     {
 	    this.execute_reset();
     } // End of local constructor.
+
+
+function startOsc(){
+    if (this.audioOn) {
+//        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        ctx = new AudioContext();
+        osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = 261.63;
+        osc.start(0);
+        osc.connect(ctx.destination);
+    }
+}
+
+
+function stopOsc(){
+    if (this.audioOn) {
+        osc.stop(0);
+    }
+}
+
 
 } // End of function TEKTRONIX4051.
 

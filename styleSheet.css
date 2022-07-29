@@ -8,6 +8,7 @@ body
 
 #container
 {
+    position: relative;
     padding: 10px;
     width: 1400px;
     margin: auto;
@@ -62,7 +63,7 @@ table
 
 #keyboard
 {
-    text-align: left;
+#   text-align: left;
     margin-top: 15px;
 }
 
@@ -146,3 +147,137 @@ table
     padding: 0 5px;
     margin: auto;
 }
+
+.mainbtn {
+    width:	     80px;
+    height:          24px;
+    vertical-align:  bottom;
+}
+
+
+/* Styling related to Storage window */
+
+#storage
+{
+    text-align: left;
+    position: absolute;
+    margin: auto;
+    left: 295px;
+    top: 50px;
+    border: solid #aaaaaa 2px;
+    padding: 10px;
+    color: #80ff00;
+    background-color: #777777;
+    opacity: 0.93;
+    font-size: 12px;
+    font-family: verdana;
+    width: 620px;
+    height: 570px;
+    box-shadow: 5px 5px 2px #333333;
+}
+
+#fileViewer
+{
+  border: 2px solid #aaaaaa;
+  width:  620px;
+  height: 390px;
+  color: #ffffff;
+  background-color: #202020;
+  resize: none;
+}
+
+#fileNum
+{
+  width:  35px;
+}
+/*
+#fileSecret
+{
+  width:  40px;
+}
+*/
+#fileDesc
+{
+  width: 160px;
+}
+#fileSize
+{
+  width:  56px;
+}
+
+#fileInfoCtrls
+{
+  position: absolute;
+  top: 48px;
+  left: 10px;
+}
+
+#fileWindow
+{
+  position: absolute;
+  top: 70px;
+  left: 10px;
+}
+
+#importCtrls
+{
+  position: absolute;
+  bottom: 52px;
+  right: 10px;
+}
+
+#savefnum
+{
+  position: absolute;
+  bottom: 52px;
+  left: 10px;
+}
+
+#importbtn
+{
+  position: absolute;
+  right: 220px;
+}
+
+#importFile
+{
+  overflow: hidden;
+}
+
+#fileList
+{
+  width:  50px;
+}
+
+#importType
+{
+  width:  200px;
+}
+
+#storebtns1
+{
+  position: absolute;
+  left: 10px;
+  bottom: 20px;
+}
+
+#storebtns3
+{
+  position: absolute;
+  right: 10px;
+  bottom: 20px;
+}
+
+.storestyle1
+{
+  border: 2px solid #aaaaaa;
+  color: #ffffff;
+  background-color: #202020;
+}
+
+.storebtn
+{
+  width: 60px;
+}
+
+

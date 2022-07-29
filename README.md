@@ -1,9 +1,35 @@
-Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
----------------------------------------------------------------------------------------
-I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file      AND the 4051, 4052, 4052A and 4054A computers.
------------
+Based on the original Tektronix 4051 Javascript Emulator by Dave R. found here:
+
+https://drive.google.com/drive/folders/1uXHa34qDizMKOGZWemFbpUet1JlYxOEx
+
+and enhanced by Jon Stanley found here:
+
+https://github.com/jonbstanley/Tek405xEmulator
+
+---
+
+For details of releases including bug fixes and what is new see <a href="https://github.com/Twilight-Logic/Tek405xEmulator/blob/master/Releases.md">Releases.md</a>.
+
+---
+
+<B>Additions by Monty McGraw:</B>
+
+Update 02 Nov 2021
+
+  - the display has been updated to enable refresh graphics
+
+Previous:
+
+ - Added new "UNIVERSAL" HTML emulator file that is compatible with all 4050 Control Characters
+
+I plan to begin converting ALL my older program captures - to a universal format compatible with the universal emulator HTLM file AND the 4051, 4052, 4052A and 4054A computers.
+
 For the older programs from the Programs directory, and my older programs on the 4050 Program repository that have Character, backspace, underline - execute the older HTML file
---------------
+
+---
+
+Detailed description by Dave R.:
+
 
 Tektronix 4051 Javascript emulator
 ==================================
